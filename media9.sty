@@ -39,8 +39,8 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{ifpdf}
 
-\def\g@mix@date@tl{2012/04/25}
-\def\g@mix@version@tl{0.6}
+\def\g@mix@date@tl{2012/05/02}
+\def\g@mix@version@tl{0.7}
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9 compatible media}
 
@@ -107,6 +107,7 @@
 \tl_gset:Nn\g_mix_pkgplayspd_tl{1}
 \tl_gset:Nn\g_mix_pkgplaytpe_tl{None}
 \tl_gset:Nn\g_mix_pkgtools_tl{false}
+\tl_gset:Nn\g_mix_pkgnrdflt_tl{/NR~true}
 \tl_gset:Nn\g_mix_pkgnav_tl{false}
 \tl_gset:Nn\g_mix_pkgopt_bg_tl{}
 \tl_gset:Nn\g_mix_pkgopt_ls_tl{}
@@ -170,6 +171,17 @@
   3Dnavpane .choice_code:n = {\tl_gset:Nx\g_mix_pkgnav_tl{\l_keys_choice_tl}},
   3Dnavpane .generate_choices:n = {true,false},
   3Dnavpane .default:n = {true},
+
+  3Dpartsattrs .choice_code:n = {
+    \tl_set:Nn\l_mix_keep_tl{keep}
+    \tl_if_eq:NNTF\l_keys_choice_tl\l_mix_keep_tl{
+      \tl_gset:Nn\g_mix_pkgnrdflt_tl{/NR~false}
+    }{
+      \tl_gset:Nn\g_mix_pkgnrdflt_tl{/NR~true}
+    }
+  },
+  3Dpartsattrs .generate_choices:n = {keep,restore},
+  3Dpartsattrs .value_required:,
 
   3Dmenu .bool_gset:N = \g_mix_pkgiiidcalc_bool,
 
@@ -275,6 +287,7 @@
   \tl_gset_eq:NN\g_mix_playspd_tl\g_mix_pkgplayspd_tl
   \tl_gset_eq:NN\g_mix_playtpe_tl\g_mix_pkgplaytpe_tl
   \tl_gset_eq:NN\g_mix_tools_tl\g_mix_pkgtools_tl
+  \tl_gset_eq:NN\g_mix_nrdflt_tl\g_mix_pkgnrdflt_tl
   \tl_gset_eq:NN\g_mix_nav_tl\g_mix_pkgnav_tl
 
   \tl_gset_eq:NN\g_mix_opt_bg_tl\g_mix_pkgopt_bg_tl
@@ -294,7 +307,6 @@
 
   \tl_set:Nn\l_mix_iiidviewarray_tl{}
   \tl_gset:Nn\g_mix_vfile_tl{}
-  \tl_gset:Nn\g_mix_nrdflt_tl{/NR~true}
 }
 
 %3D settings to be reset before creating an additional view
@@ -317,7 +329,7 @@
 
   \tl_set:Nn\l_mix_naarray_tl{} %array of node dicts
   \tl_set:Nn\l_mix_saarray_tl{} %array of crosssect dicts
-  \tl_set_eq:NN\l_mix_nr_tl\g_mix_nrdflt_tl
+  \tl_set_eq:NN\l_mix_nr_tl\g_mix_nrdflt_tl %keep or restore part attributes
 }
 
 %wrong image resource for 3D
