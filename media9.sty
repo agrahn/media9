@@ -42,7 +42,7 @@
 \RequirePackage{atbegshi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2014/03/18}
+\def\g@mix@date@tl{2014/03/21}
 \def\g@mix@version@tl{0.42}
 
 \def\g@mix@liiikerneldate{2013/07/28}
@@ -585,12 +585,15 @@
   }
 
   \cs_new:Nn\mix_pdfcatalog:n{\pdfcatalog{#1}}
+
+  \tl_new:N\g_mix_ocgnames_tl
   \cs_new:Nn\mix_pdfresources:{
+    \tl_gput_right:Nx\g_mix_ocgnames_tl{
+      ~/OC@rm@play@\int_use:N\g_mix_rmcnt_int\space\g_mix_btnocg_tl}
     \group_begin:
     \tl_set:Nx\l_mix_temp_tl{\group_end:
       \global\pdfpageresources{\the\pdfpageresources
-        /Properties<</OC@rm@play@\int_use:N\g_mix_rmcnt_int\space
-        \g_mix_btnocg_tl>>
+        /Properties<<\g_mix_ocgnames_tl>>
       }
     }\l_mix_temp_tl
   }
@@ -1048,14 +1051,10 @@
       }
       %add FileSpec to assets tree of current annot
       \cs_if_exist:cF{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}{
-        \tl_gput_right:Nx\g_mix_assets_tl{
-          ~(#1)~\tl_use:c{ImgFileSpecFor3D_#1}
-        }
+        \tl_gput_right:Nx\g_mix_assets_tl{~(#1)~\tl_use:c{ImgFileSpecFor3D_#1}}
         \tl_new:c{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}
       }
-      \tl_gset:Nx\g_mix_lastasset_tl{
-        \tl_use:c{ImgFileSpecFor3D_#1}
-      }
+      \tl_gset:Nx\g_mix_lastasset_tl{\tl_use:c{ImgFileSpecFor3D_#1}}
     }{
       %remaining file types in 3D context and any file type in case of Flash
       %context will be embedded as ordinary fstreams;
@@ -1068,23 +1067,17 @@
       %create FileSpec for current file name if not yet existent
       \cs_if_exist:cF{fileSpec_#1}{
         \mix_pdfobj:nnn{}{dict}{
-          /Type/Filespec
-          /F~(#1)
-          /UF~(#1)
+          /Type/Filespec/F~(#1)/UF~(#1)
           /EF~<</F~\tl_use:c{fileEmb_\mix_filemdfivesum:n{\l_mix_file_tl}}>>
         }
         \tl_gset:cx{fileSpec_#1}{\g_mix_pdflastobj_tl}
       }
       %add FileSpec to assets tree of current annot
       \cs_if_exist:cF{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}{
-        \tl_gput_right:Nx\g_mix_assets_tl{
-          ~(#1)~\tl_use:c{fileSpec_#1}
-        }
+        \tl_gput_right:Nx\g_mix_assets_tl{~(#1)~\tl_use:c{fileSpec_#1}}
         \tl_new:c{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}
       }
-      \tl_gset:Nx\g_mix_lastasset_tl{
-        \tl_use:c{fileSpec_#1}
-      }
+      \tl_gset:Nx\g_mix_lastasset_tl{\tl_use:c{fileSpec_#1}}
     }
   }
 }
@@ -1284,18 +1277,6 @@
     %\bool_gset_false:N\g_mix_usrpbtn_bool
     \tl_gset:Nn\g_mix_usrpbtn_tl{none}
   }
-  %enforce plain playbutton overlay for XeTeX and dvips
-  \bool_if:nF{\str_if_eq_p:Vn\g_mix_usrpbtn_tl{none}}{
-    \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
-  }
-  %\bool_if:nT{!\g_mix_pdfoutput_bool&&!\str_if_eq_p:Vn\g_mix_usrpbtn_tl{none}}{
-  %  \bool_if:NTF\g_mix_dvipdfmx_bool{
-  %    %due to a bug in xdvipdfmx
-  %    \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
-  %  }{
-  %    \tl_gset:Nn\g_mix_usrpbtn_tl{plain}
-  %  }
-  %}
   \bool_if:NTF\g_mix_usrdraft_bool{
     \tl_if_empty:NF\g_mix_usrlabel_tl{
       \mix_keytoaux_now:nn{ann@\g_mix_usrlabel_tl}{draft}
@@ -1308,6 +1289,24 @@
       }
     }
   }{
+    \bool_if:nF{\str_if_eq_p:Vn\g_mix_usrpbtn_tl{none}}{
+      %attach script that switches off play button overlay upon activation
+      \mix_pdfobj:nnn{}{stream}{
+        var~ocgs=host.getOCGs(host.pageNum);
+        for(var~i=0;i<ocgs.length;i++){
+          if(ocgs[i].name=='MediaPlayButton\int_use:N\g_mix_rmcnt_int'){
+            ocgs[i].state=false;
+          }
+        }
+      }
+      \mix_pdfobj:nnn{}{dict}{
+        /Type/Filespec/F~(btnoff)/UF~(btnoff)/EF~<</F~\g_mix_pdflastobj_tl>>
+      }
+      \tl_gset:Nx\g_mix_assets_tl{(btnoff)~\g_mix_pdflastobj_tl}
+      \tl_set:Nx\l_mix_scripts_tl{\g_mix_pdflastobj_tl}
+      %enforce plain playbutton overlay for XeTeX
+      \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
+    }
     %embed main asset
     \mix_uribegin:
     \mix_embedasset:n{#3}
@@ -1336,7 +1335,7 @@
     %attach 3D calculation script
     \bool_if:nT{\g_mix_iiid_bool && \g_mix_iiidcalc_bool}{
       \mix_embedasset:n{3Dmenu.js}
-      \tl_put_left:Nx\l_mix_scripts_tl{~\g_mix_lastasset_tl}
+      \tl_put_left:Nx\l_mix_scripts_tl{\g_mix_lastasset_tl~}
     }
     %create 3D views from file (option 3Dviews)
     \bool_if:nT{\g_mix_iiid_bool && !(\tl_if_blank_p:V\g_mix_vfile_tl)}{
@@ -2673,3 +2672,4 @@
   }
   \group_end:
 }
+\bool_if:NF\g_mix_pdfoutput_bool{\mix_insert_ocprops:\mix_insert_acroform:}
