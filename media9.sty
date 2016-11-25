@@ -34,46 +34,13 @@
 %
 % The Current Maintainer of this work is A. Grahn.
 
-% TODO (expl3 changes until end of 2012)
-%\prg_case_dim:nnn => \dim_case:nnn
-%\prg_case_int:nnn => \int_case:nnn
-%\prg_case_str:nnn => \str_case:nnn
-%\prg_case_str:onn => \str_case:onn
-%\prg_case_tl:Nnn  => \tl_case:Nnn
-%
-%\prg_stepwise_function:nnnN  => \int_step_function:nnnN
-%\prg_stepwise_inline:nnnn    => \int_step_inline:nnnn
-%\prg_stepwise_variable:nnnNn => \int_step_variable:nnnNn
-%
-%\str_if_eq:xx(TF) => \str_if_eq_x:nn(TF)
-%
-%\prg_case_str:xxn => \str_case_x:nnn
-%
-%\tl_if_empty:x(TF) {#1} => \str_if_eq_x:nn(TF) { } {#1}
-%
-%\fp_(g)abs:(N|c)
-%\fp_(g)neg:(N|c)
-%\fp_(g)mul:(N|c)n
-%\fp_(g)div:(N|c)n
-%\fp_(g)sin:(N|c)n
-%\fp_(g)cos:(N|c)n
-%\fp_(g)tan:(N|c)n
-%\fp_(g)exp:(N|c)n
-%\fp_(g)ln:(N|c)n
-%\fp_(g)pow:(N|c)n
-%\fp_(g)round_figures:(N|c)n
-%\fp_(g)round_places:(N|c)n
-%\fp_if_zero:(N|c)(TF)
-%\fp_if_undefined:(N|c)(TF)
-%\c_undefined_fp
-
 \RequirePackage{expl3}
 \RequirePackage{xparse}
 \RequirePackage{l3keys2e}
 \RequirePackage{ifpdf}
 
-\def\g@mix@date@tl{2012/07/24}
-\def\g@mix@version@tl{0.8}
+\def\g@mix@date@tl{2012/07/31}
+\def\g@mix@version@tl{0.9}
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9 compatible media}
 
@@ -118,7 +85,7 @@
 %pdfTeX version check
 \pdftex_if_engine:T{
   \int_compare:nT{\pdftexversion<130}{
-    \msg_interrupt:xxx{media9~error}{pdfTeX,~version~>=~1.30~required.}{}
+    \msg_interrupt:nnn{media9~error}{pdfTeX,~version~>=~1.30~required.}{}
   }
 }
 
@@ -388,7 +355,7 @@
       \tl_set:Nx\l_mix_usenum_tl{useobjnum~\exp_after:wN \mix_reftonum:w #1}
     }
     \tl_if_blank:oF{#3}{
-      \prg_case_str:nnn{#2}{
+      \str_case:nnn{#2}{
         {dict}{\immediate\pdfobj~\l_mix_usenum_tl~{<<#3>>}}
         {array}{\immediate\pdfobj~\l_mix_usenum_tl~{[#3]}}
         {stream}{\immediate\pdfobj~\l_mix_usenum_tl~stream~{#3}}
@@ -439,7 +406,7 @@
       % #3:content (key-value, file, string); may be empty
       \tl_set:Nn\l_mix_usenum_tl{}
       \tl_if_blank:oTF{#1}{
-        \prg_case_str:nnn{#2}{
+        \str_case:nnn{#2}{
           {dict}{\special{pdf:obj~@mix@obj\int_use:N\g_mix_obj_int\space<<>>}}
           {array}{\special{pdf:obj~@mix@obj\int_use:N\g_mix_obj_int\space[]}}
           {stream}{\special{pdf:stream~@mix@obj\int_use:N\g_mix_obj_int\space(#3)}}
@@ -454,7 +421,7 @@
         \tl_set:Nx\l_mix_usenum_tl{#1}
       }
       \tl_if_blank:oF{#3}{
-        \prg_case_str:nnn{#2}{
+        \str_case:nnn{#2}{
           {dict}{\special{pdf:put~\l_mix_usenum_tl\space<<#3>>}}
           {array}{\special{pdf:put~\l_mix_usenum_tl\space#3}}
         }{}
@@ -534,7 +501,7 @@
       \tl_set:Nn\l_mix_usenum_tl{}
       \tl_if_blank:oTF{#1}{
         \special{ps:~mark~/_objdef~{mix@obj\int_use:N\g_mix_obj_int}~/type
-          \prg_case_str:nnn{#2}{
+          \str_case:nnn{#2}{
             {dict}{/dict}
             {array}{/array}
             {stream}{/stream}
@@ -548,7 +515,7 @@
         \tl_set:Nx\l_mix_usenum_tl{#1}
       }
       \tl_if_blank:oF{#3}{
-        \prg_case_str:nnn{#2}{
+        \str_case:nnn{#2}{
           {dict}{\special{ps:~mark~\l_mix_usenum_tl~<<#3>>/PUT~pdfmark~}}
           {array}{
             \special{ps:~mark~\l_mix_usenum_tl~0~[#3]/PUTINTERVAL~pdfmark~}
@@ -877,7 +844,7 @@
     \dim_compare_p:n{\width=\c_zero_dim}
     ||\dim_compare_p:n{\totalheight=\c_zero_dim}
   }{
-    \prg_case_int:nnn{\g_mix_resizeflag_int}{
+    \int_case:nnn{\g_mix_resizeflag_int}{
       {\c_one}{% depth given alone: no rescaling, only vertical movement
         \tl_set:Nx\l_mix_ht_tl{
           \dim_eval:n{
@@ -1200,35 +1167,15 @@
 \cs_new:Npn\mix_calc_ciiw:w#1~#2~#3~#4~#5~#6\q_stop{
   % #1,#2,#3 centre of orbit coordinates (coo)
   % #4,#5,#6 centre of orbit to camera direction vector (c2c)
-  %view vector (opposite to c2c)
-  \fp_set:Nn\l_mix_viewx_fp{#4}
-  \fp_set:Nn\l_mix_viewy_fp{#5}
-  \fp_set:Nn\l_mix_viewz_fp{#6}
-  \fp_neg:N\l_mix_viewx_fp
-  \fp_neg:N\l_mix_viewy_fp
-  \fp_neg:N\l_mix_viewz_fp
-
-  %normalize view vector
-  \fp_set:Nn\l_mix_temp_fp{#4}
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-  \fp_set_eq:NN\l_mix_mag_fp\l_mix_temp_fp
-  \fp_set:Nn\l_mix_temp_fp{#5}
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-  \fp_add:Nn\l_mix_mag_fp{\l_mix_temp_fp}
-  \fp_set:Nn\l_mix_temp_fp{#6}
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-  \fp_add:Nn\l_mix_mag_fp{\l_mix_temp_fp}
-  \fp_pow:Nn\l_mix_mag_fp{0.5}
-  \fp_div:Nn\l_mix_viewx_fp{\l_mix_mag_fp}
-  \fp_div:Nn\l_mix_viewy_fp{\l_mix_mag_fp}
-  \fp_div:Nn\l_mix_viewz_fp{\l_mix_mag_fp}
+  %normalized view vector (opposite to c2c)
+  \fp_set:Nn\l_mix_mag_fp{(#4*#4 + #5*#5 + #6*#6)**0.5}
+  \fp_set:Nn\l_mix_viewx_fp{-#4/\l_mix_mag_fp}
+  \fp_set:Nn\l_mix_viewy_fp{-#5/\l_mix_mag_fp}
+  \fp_set:Nn\l_mix_viewz_fp{-#6/\l_mix_mag_fp}
 
   %camera roll
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_roll_fp
-  \fp_div:Nn\l_mix_temp_fp{180}
-  \fp_mul:Nn\l_mix_temp_fp{\c_pi_fp}
-  \fp_sin:Nn\l_mix_sinroll_fp{\l_mix_temp_fp}
-  \fp_cos:Nn\l_mix_cosroll_fp{\l_mix_temp_fp}
+  \fp_set:Nn\l_mix_sinroll_fp{sin(\l_mix_roll_fp deg)}
+  \fp_set:Nn\l_mix_cosroll_fp{cos(\l_mix_roll_fp deg)}
 
   %top and bottom views
   \fp_set:Nn\l_mix_leftx_fp{-1.0}
@@ -1245,102 +1192,47 @@
     \fp_set:Nn\l_mix_upy_fp{-1.0}%
     \fp_set:Nn\l_mix_upz_fp{0.0}%
   }
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_viewx_fp
-  \fp_abs:N\l_mix_temp_fp
-  \fp_set_eq:NN\l_mix_sumxy_fp\l_mix_temp_fp
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_viewy_fp
-  \fp_abs:N\l_mix_temp_fp
-  \fp_add:Nn\l_mix_sumxy_fp{\l_mix_temp_fp}
-  \fp_if_zero:NF\l_mix_sumxy_fp{% other views than top and bottom
+  \fp_set:Nn\l_mix_sumxy_fp{abs(\l_mix_viewx_fp) + abs(\l_mix_viewy_fp)}
+  \fp_compare:nNnF\l_mix_sumxy_fp=\c_zero_fp{% other views than top and bottom
     %up-vector = up_world - (up_world dot view) view
-    \fp_set_eq:NN\l_mix_upx_fp\l_mix_viewz_fp
-    \fp_mul:Nn\l_mix_upx_fp{\l_mix_viewx_fp}
-    \fp_neg:N\l_mix_upx_fp
-    \fp_set_eq:NN\l_mix_upy_fp\l_mix_viewz_fp
-    \fp_mul:Nn\l_mix_upy_fp{\l_mix_viewy_fp}
-    \fp_neg:N\l_mix_upy_fp
-    \fp_set_eq:NN\l_mix_upz_fp\l_mix_viewz_fp
-    \fp_mul:Nn\l_mix_upz_fp{\l_mix_viewz_fp}
-    \fp_neg:N\l_mix_upz_fp
-    \fp_add:Nn\l_mix_upz_fp{1.0}
+    \fp_set:Nn\l_mix_upx_fp{-\l_mix_viewz_fp*\l_mix_viewx_fp}
+    \fp_set:Nn\l_mix_upy_fp{-\l_mix_viewz_fp*\l_mix_viewy_fp}
+    \fp_set:Nn\l_mix_upz_fp{-\l_mix_viewz_fp*\l_mix_viewz_fp + 1.0}
     %normalize up-vector
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_upx_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-    \fp_set_eq:NN\l_mix_mag_fp\l_mix_temp_fp
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_upy_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-    \fp_add:Nn\l_mix_mag_fp{\l_mix_temp_fp}
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_upz_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-    \fp_add:Nn\l_mix_mag_fp{\l_mix_temp_fp}
-    \fp_pow:Nn\l_mix_mag_fp{0.5}
-    \fp_div:Nn\l_mix_upx_fp{\l_mix_mag_fp}
-    \fp_div:Nn\l_mix_upy_fp{\l_mix_mag_fp}
-    \fp_div:Nn\l_mix_upz_fp{\l_mix_mag_fp}
+    \fp_set:Nn\l_mix_mag_fp{(\l_mix_upx_fp*\l_mix_upx_fp
+      + \l_mix_upy_fp*\l_mix_upy_fp + \l_mix_upz_fp*\l_mix_upz_fp)**0.5}
+    \fp_set:Nn\l_mix_upx_fp{\l_mix_upx_fp/\l_mix_mag_fp}
+    \fp_set:Nn\l_mix_upy_fp{\l_mix_upy_fp/\l_mix_mag_fp}
+    \fp_set:Nn\l_mix_upz_fp{\l_mix_upz_fp/\l_mix_mag_fp}
     %left vector = up x view
-    \fp_set_eq:NN\l_mix_leftx_fp\l_mix_viewz_fp
-    \fp_mul:Nn\l_mix_leftx_fp{\l_mix_upy_fp}
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_viewy_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_upz_fp}
-    \fp_sub:Nn\l_mix_leftx_fp{\l_mix_temp_fp}
-    \fp_set_eq:NN\l_mix_lefty_fp\l_mix_viewx_fp
-    \fp_mul:Nn\l_mix_lefty_fp{\l_mix_upz_fp}
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_viewz_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_upx_fp}
-    \fp_sub:Nn\l_mix_lefty_fp{\l_mix_temp_fp}
-    \fp_set_eq:NN\l_mix_leftz_fp\l_mix_viewy_fp
-    \fp_mul:Nn\l_mix_leftz_fp{\l_mix_upx_fp}
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_viewx_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_upy_fp}
-    \fp_sub:Nn\l_mix_leftz_fp{\l_mix_temp_fp}
+    \fp_set:Nn\l_mix_leftx_fp{
+      \l_mix_viewz_fp*\l_mix_upy_fp - \l_mix_viewy_fp*\l_mix_upz_fp}
+    \fp_set:Nn\l_mix_lefty_fp{
+      \l_mix_viewx_fp*\l_mix_upz_fp - \l_mix_viewz_fp*\l_mix_upx_fp}
+    \fp_set:Nn\l_mix_leftz_fp{
+      \l_mix_viewy_fp*\l_mix_upx_fp - \l_mix_viewx_fp*\l_mix_upy_fp}
     %normalize left vector
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_leftx_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-    \fp_set_eq:NN\l_mix_mag_fp\l_mix_temp_fp
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_lefty_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-    \fp_add:Nn\l_mix_mag_fp{\l_mix_temp_fp}
-    \fp_set_eq:NN\l_mix_temp_fp\l_mix_leftz_fp
-    \fp_mul:Nn\l_mix_temp_fp{\l_mix_temp_fp}
-    \fp_add:Nn\l_mix_mag_fp{\l_mix_temp_fp}
-    \fp_pow:Nn\l_mix_mag_fp{0.5}
-    \fp_div:Nn\l_mix_leftx_fp{\l_mix_mag_fp}
-    \fp_div:Nn\l_mix_lefty_fp{\l_mix_mag_fp}
-    \fp_div:Nn\l_mix_leftz_fp{\l_mix_mag_fp}
+    \fp_set:Nn\l_mix_mag_fp{(\l_mix_leftx_fp*\l_mix_leftx_fp
+      + \l_mix_lefty_fp*\l_mix_lefty_fp + \l_mix_leftz_fp*\l_mix_leftz_fp)**0.5}
+    \fp_set:Nn\l_mix_leftx_fp{\l_mix_leftx_fp/\l_mix_mag_fp}
+    \fp_set:Nn\l_mix_lefty_fp{\l_mix_lefty_fp/\l_mix_mag_fp}
+    \fp_set:Nn\l_mix_leftz_fp{\l_mix_leftz_fp/\l_mix_mag_fp}
   }
 
   %apply camera roll
-  \fp_set_eq:NN\l_mix_leftxprime_fp\l_mix_leftx_fp
-  \fp_mul:Nn\l_mix_leftxprime_fp{\l_mix_cosroll_fp}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_upx_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_sinroll_fp}
-  \fp_add:Nn\l_mix_leftxprime_fp{\l_mix_temp_fp}
-  \fp_set_eq:NN\l_mix_leftyprime_fp\l_mix_lefty_fp
-  \fp_mul:Nn\l_mix_leftyprime_fp{\l_mix_cosroll_fp}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_upy_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_sinroll_fp}
-  \fp_add:Nn\l_mix_leftyprime_fp{\l_mix_temp_fp}
-  \fp_set_eq:NN\l_mix_leftzprime_fp\l_mix_leftz_fp
-  \fp_mul:Nn\l_mix_leftzprime_fp{\l_mix_cosroll_fp}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_upz_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_sinroll_fp}
-  \fp_add:Nn\l_mix_leftzprime_fp{\l_mix_temp_fp}
+  \fp_set:Nn\l_mix_leftxprime_fp{
+    \l_mix_leftx_fp*\l_mix_cosroll_fp + \l_mix_upx_fp*\l_mix_sinroll_fp}
+  \fp_set:Nn\l_mix_leftyprime_fp{
+    \l_mix_lefty_fp*\l_mix_cosroll_fp + \l_mix_upy_fp*\l_mix_sinroll_fp}
+  \fp_set:Nn\l_mix_leftzprime_fp{
+    \l_mix_leftz_fp*\l_mix_cosroll_fp + \l_mix_upz_fp*\l_mix_sinroll_fp}
 
-  \fp_set_eq:NN\l_mix_upxprime_fp\l_mix_upx_fp
-  \fp_mul:Nn\l_mix_upxprime_fp{\l_mix_cosroll_fp}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_leftx_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_sinroll_fp}
-  \fp_sub:Nn\l_mix_upxprime_fp{\l_mix_temp_fp}
-  \fp_set_eq:NN\l_mix_upyprime_fp\l_mix_upy_fp
-  \fp_mul:Nn\l_mix_upyprime_fp{\l_mix_cosroll_fp}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_lefty_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_sinroll_fp}
-  \fp_sub:Nn\l_mix_upyprime_fp{\l_mix_temp_fp}
-  \fp_set_eq:NN\l_mix_upzprime_fp\l_mix_upz_fp
-  \fp_mul:Nn\l_mix_upzprime_fp{\l_mix_cosroll_fp}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_leftz_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_sinroll_fp}
-  \fp_sub:Nn\l_mix_upzprime_fp{\l_mix_temp_fp}
+  \fp_set:Nn\l_mix_upxprime_fp{
+    \l_mix_upx_fp*\l_mix_cosroll_fp - \l_mix_leftx_fp*\l_mix_sinroll_fp}
+  \fp_set:Nn\l_mix_upyprime_fp{
+    \l_mix_upy_fp*\l_mix_cosroll_fp - \l_mix_lefty_fp*\l_mix_sinroll_fp}
+  \fp_set:Nn\l_mix_upzprime_fp{
+    \l_mix_upz_fp*\l_mix_cosroll_fp - \l_mix_leftz_fp*\l_mix_sinroll_fp}
 
   \fp_set_eq:NN\l_mix_leftx_fp\l_mix_leftxprime_fp
   \fp_set_eq:NN\l_mix_lefty_fp\l_mix_leftyprime_fp
@@ -1350,18 +1242,9 @@
   \fp_set_eq:NN\l_mix_upz_fp\l_mix_upzprime_fp
 
   %translation vector
-  \fp_set:Nn\l_mix_transx_fp{#1}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_roo_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_viewx_fp}
-  \fp_sub:Nn\l_mix_transx_fp{\l_mix_temp_fp}
-  \fp_set:Nn\l_mix_transy_fp{#2}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_roo_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_viewy_fp}
-  \fp_sub:Nn\l_mix_transy_fp{\l_mix_temp_fp}
-  \fp_set:Nn\l_mix_transz_fp{#3}
-  \fp_set_eq:NN\l_mix_temp_fp\l_mix_roo_fp
-  \fp_mul:Nn\l_mix_temp_fp{\l_mix_viewz_fp}
-  \fp_sub:Nn\l_mix_transz_fp{\l_mix_temp_fp}
+  \fp_set:Nn\l_mix_transx_fp{#1 - \l_mix_roo_fp*\l_mix_viewx_fp}
+  \fp_set:Nn\l_mix_transy_fp{#2 - \l_mix_roo_fp*\l_mix_viewy_fp}
+  \fp_set:Nn\l_mix_transz_fp{#3 - \l_mix_roo_fp*\l_mix_viewz_fp}
 
   %format elements of transformation matrix
   \tl_set:Nx\l_mix_leftx_tl {\fp_use:N\l_mix_leftx_fp }
@@ -1592,9 +1475,9 @@
   3Dc2w .value_required:,
 
   3Droo .code:n = {
-    \fp_gset:Nn\g_mix_opt_roo_fp{#1}
-    \fp_abs:N\g_mix_opt_roo_fp
-    \fp_if_zero:NT\g_mix_opt_roo_fp{\fp_set:Nn\g_mix_opt_roo_fp{1e-8}}
+    \fp_gset:Nn\g_mix_opt_roo_fp{abs(#1)}
+    \fp_compare:nNnT\g_mix_opt_roo_fp=\c_zero_fp{
+      \fp_set:Nn\g_mix_opt_roo_fp{1e-8}}
     \bool_gset_true:N\g_mix_opt_iiidview_bool
     \bool_set_true:N\l_mix_roo_bool
   },
@@ -1610,9 +1493,7 @@
     \fp_compare:nF{#1=0.0}{
       \fp_gset:Nn\g_mix_opt_oscale_fp{#1}
       \bool_if:NF\l_mix_roo_bool{
-        \fp_set:Nn\l_mix_temp_fp{1}
-        \fp_div:Nn\l_mix_temp_fp{#1}
-        \fp_div:Nn\l_mix_temp_fp{2}
+        \fp_set:Nn\l_mix_temp_fp{1/#1/2}
         \fp_gset_eq:NN\g_mix_opt_roo_fp\l_mix_temp_fp
       }
     }
@@ -1716,18 +1597,12 @@
 
     \fp_set:Nn#1{#2}
   }{
-    \fp_mul:Nn\l_mix_tmpa_fp{\int_eval:n{2*#3-1}}
-    \fp_mul:Nn\l_mix_tmpb_fp{\int_eval:n{2*#3}}
+    \fp_set:Nn\l_mix_tmpa_fp{\l_mix_tmpa_fp * \int_eval:n{2*#3-1}}
+    \fp_set:Nn\l_mix_tmpb_fp{\l_mix_tmpb_fp * \int_eval:n{2*#3}}
     \fp_set:Nn\l_mix_tmpc_fp{\int_eval:n{2*#3+1}}
-    \fp_mul:Nn\l_mix_tmpd_fp{#2}
-    \fp_mul:Nn\l_mix_tmpd_fp{#2}
+    \fp_set:Nn\l_mix_tmpd_fp{\l_mix_tmpd_fp * #2 * #2}
 
-    \fp_set_eq:NN\l_mix_tmpe_fp\l_mix_tmpd_fp
-    \fp_mul:Nn\l_mix_tmpe_fp{\l_mix_tmpa_fp}
-    \fp_div:Nn\l_mix_tmpe_fp{\l_mix_tmpb_fp}
-    \fp_div:Nn\l_mix_tmpe_fp{\l_mix_tmpc_fp}
-
-    \fp_add:Nn#1{\l_mix_tmpe_fp}
+    \fp_set:Nn#1{#1 + \l_mix_tmpd_fp*\l_mix_tmpa_fp/\l_mix_tmpb_fp/\l_mix_tmpc_fp}
   }
   \int_compare:nF{#3==#4}{
     \mix_arcsin:Nnnn#1{#2}{\int_eval:n{#3+1}}{#4}
@@ -1735,60 +1610,43 @@
 }
 
 \cs_new:Nn\mix_angfromxy:Nnn{ %#1 result (deg), #2 x, #3 y
-  %#1 result, #2 x, #3 y
-  \fp_set:Nn\l_mix_tmpa_fp{#2}\fp_mul:Nn\l_mix_tmpa_fp{#2}
-  \fp_set:Nn\l_mix_tmpb_fp{#3}\fp_mul:Nn\l_mix_tmpb_fp{#3}
-  \fp_add:Nn\l_mix_tmpa_fp\l_mix_tmpb_fp
-  \fp_pow:Nn\l_mix_tmpa_fp{0.5}
-  \fp_set:Nn\l_mix_asinarg_fp{#3}
-  \fp_div:Nn\l_mix_asinarg_fp\l_mix_tmpa_fp
-  \fp_set:Nn\l_mix_acosarg_fp{#2}
-  \fp_div:Nn\l_mix_acosarg_fp\l_mix_tmpa_fp
-  \fp_set:Nn\l_mix_halfsqrttwo_fp{2}
-  \fp_pow:Nn\l_mix_halfsqrttwo_fp{0.5}
-  \fp_div:Nn\l_mix_halfsqrttwo_fp{2}
+  \fp_set:Nn\l_mix_asinarg_fp{#3/(#2*#2 + #3*#3)**0.5}
+  \fp_set:Nn\l_mix_acosarg_fp{#2/(#2*#2 + #3*#3)**0.5}
+  \fp_set:Nn\l_mix_halfsqrttwo_fp{2**0.5/2}
   \mix_arcsin:Nnnn\l_mix_arcsin_fp{\l_mix_asinarg_fp}{0}{10}
   \mix_arcsin:Nnnn\l_mix_arccos_fp{\l_mix_acosarg_fp}{0}{10}
-  \fp_abs:N\l_mix_asinarg_fp
+  \fp_set:Nn\l_mix_asinarg_fp{abs(\l_mix_asinarg_fp)}
   %determine quadrant
   \fp_compare:nTF{#2>=\c_zero_fp}{
     \fp_compare:nTF{#3>=\c_zero_fp}{ %I
       \fp_compare:nNnTF\l_mix_asinarg_fp<\l_mix_halfsqrttwo_fp{
         \fp_set_eq:NN#1\l_mix_arcsin_fp
       }{
-        \fp_set:Nn#1{\c_pi_fp}\fp_div:Nn#1{2}
-        \fp_sub:Nn#1\l_mix_arccos_fp
+        \fp_set:Nn#1{\c_pi_fp/2 - \l_mix_arccos_fp}
       }
     }{                               %IV
       \fp_compare:nNnTF\l_mix_asinarg_fp<\l_mix_halfsqrttwo_fp{
         \fp_set_eq:NN#1\l_mix_arcsin_fp
       }{
-        \fp_set:Nn#1{\c_pi_fp}\fp_div:Nn#1{2}
-        \fp_sub:Nn#1\l_mix_arccos_fp
-        \fp_neg:N#1
+        \fp_set:Nn#1{\l_mix_arccos_fp-\c_pi_fp/2}
       }
     }
   }{
     \fp_compare:nTF{#3>=\c_zero_fp}{ %II
       \fp_compare:nNnTF\l_mix_asinarg_fp<\l_mix_halfsqrttwo_fp{
-        \fp_set:Nn#1{\c_pi_fp}
-        \fp_sub:Nn#1\l_mix_arcsin_fp
+        \fp_set:Nn#1{\c_pi_fp-\l_mix_arcsin_fp}
       }{
-        \fp_set:Nn#1{\c_pi_fp}\fp_div:Nn#1{2}
-        \fp_sub:Nn#1\l_mix_arccos_fp
+        \fp_set:Nn#1{\c_pi_fp/2-\l_mix_arccos_fp}
       }
     }{                               %III
       \fp_compare:nNnTF\l_mix_asinarg_fp<\l_mix_halfsqrttwo_fp{
-        \fp_set:Nn#1{-\c_pi_fp}
-        \fp_sub:Nn#1\l_mix_arcsin_fp
+        \fp_set:Nn#1{-\c_pi_fp-\l_mix_arcsin_fp}
       }{
-        \fp_set:Nn#1{\c_pi_fp}\fp_div:Nn#1{2}
-        \fp_sub:Nn#1\l_mix_arccos_fp
-        \fp_neg:N#1
+        \fp_set:Nn#1{\l_mix_arccos_fp-\c_pi_fp/2}
       }
     }
   }
-  \fp_mul:Nn#1{180}\fp_div:Nn#1{\c_pi_fp}
+  \fp_set:Nn#1{#1/deg}
 }
 
 \bool_new:N\l_mix_blankndname_bool
@@ -1841,9 +1699,9 @@
       \msg_error:nnxxxx{media9}{key~not~allowed}
         {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{ROO}{a~VIEW}
     }
-    \fp_set:Nn\l_mix_roo_fp{#1}
-    \fp_abs:N\l_mix_roo_fp
-    \fp_if_zero:NT\l_mix_roo_fp{\fp_set:Nn\l_mix_roo_fp{1e-8}}
+    \fp_set:Nn\l_mix_roo_fp{abs(#1)}
+    \fp_compare:nNnT\l_mix_roo_fp=\c_zero_fp{
+      \fp_set:Nn\l_mix_roo_fp{1e-8}}
     \bool_set_true:N\l_mix_roo_bool
   },
   ROO .value_required:,
@@ -1866,9 +1724,7 @@
     \fp_compare:nF{#1=0.0}{
       \fp_set:Nn\l_mix_oscale_fp{#1}
       \bool_if:NF\l_mix_roo_bool{
-        \fp_set:Nn\l_mix_temp_fp{1}
-        \fp_div:Nn\l_mix_temp_fp{#1}
-        \fp_div:Nn\l_mix_temp_fp{2}
+        \fp_set:Nn\l_mix_temp_fp{1/#1/2}
         \fp_set_eq:NN\l_mix_roo_fp\l_mix_temp_fp
       }
     }
@@ -2045,16 +1901,11 @@
     }
     \tl_set:Nx\l_mix_args_tl{#1\space}
     \exp_after:wN\mix_parse_vect:w\l_mix_args_tl\q_stop
-    \fp_set_eq:NN\l_mix_tmpa_fp\l_mix_x_fp
-    \fp_mul:Nn\l_mix_tmpa_fp\l_mix_x_fp
-    \fp_set_eq:NN\l_mix_tmpb_fp\l_mix_y_fp
-    \fp_mul:Nn\l_mix_tmpb_fp\l_mix_y_fp
-    \fp_set_eq:NN\l_mix_magxy\l_mix_tmpa_fp
-    \fp_add:Nn\l_mix_magxy\l_mix_tmpb_fp
-    \fp_pow:Nn\l_mix_magxy{0.5}             %sqrt(x^2+y^2)
+    \fp_set:Nn\l_mix_magxy{ %sqrt(x^2+y^2)
+      (\l_mix_x_fp*\l_mix_x_fp + \l_mix_y_fp*\l_mix_y_fp)**0.5}
     %rot angle of normal vec around Y axis
     \mix_angfromxy:Nnn\l_mix_roty_fp\l_mix_magxy\l_mix_z_fp
-    \fp_neg:N\l_mix_roty_fp
+    \fp_set:Nn\l_mix_roty_fp{-\l_mix_roty_fp}
     %rot angle of normal vec around Z axis
     \mix_angfromxy:Nnn\l_mix_rotz_fp\l_mix_x_fp\l_mix_y_fp
     \tl_set:Nx\l_mix_roty_tl{\fp_use:N\l_mix_roty_fp}
@@ -2066,7 +1917,7 @@
   NORMAL .value_required:,
 
   END .code:n = {
-    \prg_case_int:nnn{\l_mix_level_tl}{
+    \int_case:nnn{\l_mix_level_tl}{
       {0}{ %VIEW
         \bool_if:NF\l_mix_ciiw_bool{
           \tl_set:Nx\l_mix_args_tl{\l_mix_coo_tl\space\l_mix_ctoc_tl\space}
