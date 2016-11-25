@@ -39,10 +39,14 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{ifpdf}
 
-\def\g@mix@date@tl{2012/07/31}
-\def\g@mix@version@tl{0.9}
+\def\g@mix@date@tl{2012/11/20}
+\def\g@mix@version@tl{0.16}
+
+\def\g@mix@liiikerneldate{2012/07/16}
+\def\g@mix@liiipkgdate{2012/07/16}
+
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
-{acrobat-9 compatible media}
+{acrobat-9/X compatible media}
 
 \tl_gset:Nx\g_mix_date_tl{\g@mix@date@tl}
 \tl_gset:Nx\g_mix_version_tl{\g@mix@version@tl}
@@ -61,16 +65,16 @@
   }
   \tex_endinput:D
 }
-\@ifpackagelater{expl3}{2012/07/16}{}{
-  \msg_error:nnx{media9}{support~outdated}{l3kernel}
+\@ifpackagelater{expl3}{\g@mix@liiikerneldate}{}{
+  \msg_error:nnn{media9}{support~outdated}{l3kernel}
   \tex_endinput:D
 }
-\@ifpackagelater{xparse}{2012/07/16}{}{
-  \msg_error:nnx{media9}{support~outdated}{l3packages}
+\@ifpackagelater{xparse}{\g@mix@liiipkgdate}{}{
+  \msg_error:nnn{media9}{support~outdated}{l3packages}
   \tex_endinput:D
 }
-\@ifpackagelater{l3keys2e}{2012/07/16}{}{
-  \msg_error:nnx{media9}{support~outdated}{l3packages}
+\@ifpackagelater{l3keys2e}{\g@mix@liiipkgdate}{}{
+  \msg_error:nnn{media9}{support~outdated}{l3packages}
   \tex_endinput:D
 }
 
@@ -97,6 +101,7 @@
   perhaps~it~is~spelled~incorrectly.
 }
 
+\bool_new:N\g_mix_pkgbigfiles_bool
 \bool_new:N\g_mix_dvipdfmx_bool
 \bool_new:N\g_mix_pkgdraft_bool
 \tl_gset:Nn\g_mix_pkgact_tl{/XA}
@@ -116,6 +121,11 @@
 \keys_define:nn{media9}{
   dvipdfmx .bool_gset:N = \g_mix_dvipdfmx_bool,
   xetex    .bool_gset:N = \g_mix_dvipdfmx_bool,
+
+  bigfiles .choice:,
+  bigfiles / true .code:n = {\bool_gset_true:N\g_mix_pkgbigfiles_bool},
+  bigfiles / false .code:n = {\bool_gset_false:N\g_mix_pkgbigfiles_bool},
+  bigfiles .default:n = {true},
 
   draft .choice:,
   draft / true .code:n = {\bool_gset_true:N\g_mix_pkgdraft_bool},
@@ -202,7 +212,7 @@
   3Drender .value_required:,
 
   unknown .code:n = {
-    \msg_error:nnx{media9}{unknown~package~option}{\exp_not:V\l_keys_key_tl}
+    \msg_error:nnx{media9}{unknown~package~option}{\l_keys_key_tl}
   },
 }
 \ProcessKeysOptions{media9}
@@ -222,8 +232,8 @@
 
 %missing package error message
 %example usage:
-%  \msg_error:nnxx{media9}{missing~package}{graphicx}{[dvipdfmx]}
-%  \msg_error:nnx{media9}{missing~package}{graphicx}
+%  \msg_error:nnnn{media9}{missing~package}{graphicx}{[dvipdfmx]}
+%  \msg_error:nnn{media9}{missing~package}{graphicx}
 \msg_set:nnn{media9}{missing~package}{
   Package~`#1'~has~not~been~loaded~yet.\\
   Put~the~line\\
@@ -233,9 +243,9 @@
 
 %file not found error message
 %example usage:
-%  \msg_error:nnxx{media9}{file~not~found}{myfile.swf}
+%  \msg_error:nnn{media9}{file~not~found}{myfile.swf}
 \msg_set:nnnn{media9}{file~not~found}{
-  Loine~\msg_line_number: :~
+  Line~\msg_line_number: :~
   File~`#1'~not~found.}{Make~sure~file~`#1'~exists~and~is~readable!}
 
 \pdftex_if_engine:TF{
@@ -293,10 +303,11 @@
   \tl_gset_eq:NN\g_mix_opt_bg_tl\g_mix_pkgopt_bg_tl
   \tl_gset_eq:NN\g_mix_opt_ls_tl\g_mix_pkgopt_ls_tl
   \tl_gset_eq:NN\g_mix_opt_rm_tl\g_mix_pkgopt_rm_tl
+  \tl_gset:Nn\g_mix_opt_psob_tl{Min}
   \tl_gset:Nn\g_mix_opt_coo_tl{0~0~0}
   \tl_gset:Nn\g_mix_opt_ctoc_tl{0~-1~0}
   \tl_gset:Nn\g_mix_opt_ciiw_tl{}
-  \fp_gset:Nn\g_mix_opt_roo_fp{1e-8}
+  \fp_gset:Nn\g_mix_opt_roo_fp{1e-9}
   \fp_gset:Nn\g_mix_opt_aac_fp{30}
   \fp_gset:Nn\g_mix_opt_oscale_fp{1}
   \fp_gset:Nn\g_mix_opt_roll_fp{0}
@@ -314,11 +325,12 @@
   \tl_set:Nn\l_mix_bg_tl{}
   \tl_set:Nn\l_mix_ls_tl{}
   \tl_set:Nn\l_mix_rm_tl{}
+  \tl_set:Nn\l_mix_psob_tl{Min}
   \tl_set:Nn\l_mix_coo_tl{0~0~0}
   \tl_set:Nn\l_mix_ctoc_tl{0~-1~0}
   \tl_set:Nn\l_mix_ciiw_tl{}
 
-  \fp_set:Nn\l_mix_roo_fp{1e-8}
+  \fp_set:Nn\l_mix_roo_fp{1e-9}
   \fp_set:Nn\l_mix_aac_fp{30}
   \fp_set:Nn\l_mix_oscale_fp{1}
   \fp_set:Nn\l_mix_roll_fp{0}
@@ -387,7 +399,7 @@
       \immediate\pdfximage{#1}
       \tl_gset:Nx\g_mix_pdflastximage_tl{\int_use:c{pdflastximage}~0~R}
     }{
-      \msg_error:nnxxx{media9}{wrong~image~resource}{#1}{pdftex}{
+      \msg_error:nnnnn{media9}{wrong~image~resource}{#1}{pdftex}{
         png,~jpeg~and~jbig2
       }
     }
@@ -464,7 +476,7 @@
         \tl_gset:Nx\g_mix_pdflastximage_tl{@mix@obj\int_use:N\g_mix_obj_int}
         \int_gincr:N\g_mix_obj_int
       }{
-        \msg_error:nnxxx{media9}{wrong~image~resource}{#1}{dvipdfmx/xetex}{
+        \msg_error:nnnnn{media9}{wrong~image~resource}{#1}{dvipdfmx/xetex}{
           png~and~jpeg
         }
       }
@@ -492,6 +504,20 @@
           ifelse~
         }
       }
+      \bool_if:NT\g_mix_pkgbigfiles_bool{
+        \special{!~1~dict~begin~(./\jobname.m9)~run~end}
+        %open auxiliary file \jobname.m9 for writing hex encoded streams
+        %of media files. This file is read and executed during ps2pdf
+        %conversion.
+        \iow_new:N\g_mix_mstreams_stream
+        \iow_open:Nn\g_mix_mstreams_stream{\jobname.m9}
+        \iow_now:Nn\g_mix_mstreams_stream{
+          /o{mark/_objdef}bind~def/O{/type/stream/OBJ~pdfmark}bind~def
+          /m~systemdict/mark~get~def
+          /P{/ASCIIHexDecode~filter/PUT~pdfmark}bind~def
+          /C{/CLOSE~pdfmark}bind~def
+        }
+      }
     }
 
     \cs_new:Nn\mix_pdfobj:nnn{
@@ -500,14 +526,23 @@
       % #3:content (key-value, file, string); may be empty
       \tl_set:Nn\l_mix_usenum_tl{}
       \tl_if_blank:oTF{#1}{
-        \special{ps:~mark~/_objdef~{mix@obj\int_use:N\g_mix_obj_int}~/type
-          \str_case:nnn{#2}{
-            {dict}{/dict}
-            {array}{/array}
-            {stream}{/stream}
-            {fstream}{/stream}
-          }{}~
-          /OBJ~pdfmark~
+        \bool_if:nTF{
+          \g_mix_pkgbigfiles_bool &&
+          \str_if_eq_p:nn{#2}{fstream}
+        }{
+          \iow_now:Nx\g_mix_mstreams_stream{
+            o{mix@obj\int_use:N\g_mix_obj_int}O
+          }
+        }{
+          \special{ps:~mark~/_objdef~{mix@obj\int_use:N\g_mix_obj_int}~/type
+            \str_case:nnn{#2}{
+              {dict}{/dict}
+              {array}{/array}
+              {stream}{/stream}
+              {fstream}{/stream}
+            }{}~
+            /OBJ~pdfmark~
+          }
         }
         \tl_set:Nx\l_mix_usenum_tl{{mix@obj\int_use:N\g_mix_obj_int}}
         \int_gincr:N\g_mix_obj_int
@@ -530,19 +565,32 @@
             \bool_while_do:nn{
               \int_compare_p:n{\l_mix_offset_tl<\l_mix_fsize_tl}
             }{
-              \special{ps:~
-                mark~
-                  \l_mix_usenum_tl~
-                  (\mix_filedump:nnn{\l_mix_offset_tl}{32767}{#3})~
-                  /ASCIIHexDecode~filter~/PUT~
-                pdfmark~
+              \bool_if:NTF\g_mix_pkgbigfiles_bool{
+                \iow_now:Nx\g_mix_mstreams_stream{
+                  m\l_mix_usenum_tl
+                  (\mix_filedump:nnn{\l_mix_offset_tl}{32767}{#3})P
+                }
+              }{
+                \special{ps:~
+                  mark~
+                    \l_mix_usenum_tl~
+                    (\mix_filedump:nnn{\l_mix_offset_tl}{32767}{#3})~
+                    /ASCIIHexDecode~filter~/PUT~
+                  pdfmark~
+                }
               }
               \tl_set:Nx\l_mix_offset_tl{\int_eval:n{\l_mix_offset_tl+32767}}
               \message{.}
             }
             \message{>}
-            \special{ps:~
-              mark~\l_mix_usenum_tl~/CLOSE~pdfmark~
+            \bool_if:NTF\g_mix_pkgbigfiles_bool{
+              \iow_now:Nx\g_mix_mstreams_stream{
+                m\l_mix_usenum_tl~C
+              }
+            }{
+              \special{ps:~
+                mark~\l_mix_usenum_tl~/CLOSE~pdfmark~
+              }
             }
           }
         }{}
@@ -694,6 +742,7 @@
 
 \cs_new:Nn\mix_embedasset:n{ %#1 file name or url
   \filename@parse{#1}
+  \tl_set:Nx\l_mix_base_tl{\filename@base}
   \tl_set:Nx\l_mix_ext_tl{\filename@ext}
   \tl_replace_all:Nnn\l_mix_ext_tl{A}{a}
   \tl_replace_all:Nnn\l_mix_ext_tl{B}{b}
@@ -736,7 +785,7 @@
     \file_if_exist:nTF{#1}{
       \file_add_path:nN{#1}\l_mix_file_tl
     }{
-      \msg_error:nnxx{media9}{file~not~found}{#1}
+      \msg_error:nnx{media9}{file~not~found}{#1}
     }
     \bool_if:nTF{
       %in 3D context, image resources must be embedded as Image XObjects, not
@@ -914,7 +963,8 @@
 
 \NewDocumentCommand\addmediapath{m}{\file_path_include:n{#1/}}
 
-\NewDocumentCommand\includemedia{omm}{%#1 options, #2 text/image #3 media file
+\ior_new:N\l_mix_vfile_stream %file stream for 3D views files
+\NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
   \group_begin:
   \leavevmode
   \mix_reset:
@@ -942,8 +992,19 @@
       \bool_set_eq:NN\l_mix_url_bool\g_mix_url_bool
       \mix_uribegin:
       \mix_embedasset:n{#3}
-      \bool_gset:Nn\g_mix_iiid_bool{ %test on 3D file type
+      \bool_if:nTF{
         \str_if_eq_p:Vn\l_mix_ext_tl{prc}||\str_if_eq_p:Vn\l_mix_ext_tl{u3d}
+      }{
+        \bool_gset_true:N\g_mix_iiid_bool
+        \tl_gset:Nn\g_mix_mainassetsub_tl{3D}
+      }{
+        \str_case_x:nnn{\l_mix_base_tl}{
+          {APlayer}{\tl_gset:Nn\g_mix_mainassetsub_tl{Sound}}
+          {AudioPlayer}{\tl_gset:Nn\g_mix_mainassetsub_tl{Sound}}
+          {VPlayer}{\tl_gset:Nn\g_mix_mainassetsub_tl{Video}}
+          {VideoPlayer}{\tl_gset:Nn\g_mix_mainassetsub_tl{Video}}
+          {StrobeMediaPlayback}{\tl_gset:Nn\g_mix_mainassetsub_tl{Video}}
+        }{\tl_gset:Nn\g_mix_mainassetsub_tl{Flash}}
       }
       \tl_gset:Nx\g_mix_mainasset_tl{~\g_mix_lastasset_tl}
       \mix_uriend:
@@ -964,7 +1025,6 @@
       \tl_set:Nn\l_mix_level_tl{\c_minus_one}
       \int_zero:N\l_mix_viewcnt_int
       \int_zero:N\l_mix_lineno_int
-      \ior_new:N\l_mix_vfile_stream
       \ior_open:Nn\l_mix_vfile_stream{\g_mix_vfile_tl}
 
       \group_begin:
@@ -993,6 +1053,7 @@
       \tl_set_eq:NN\l_mix_bg_tl\g_mix_opt_bg_tl
       \tl_set_eq:NN\l_mix_ls_tl\g_mix_opt_ls_tl
       \tl_set_eq:NN\l_mix_rm_tl\g_mix_opt_rm_tl
+      \tl_set_eq:NN\l_mix_psob_tl\g_mix_opt_psob_tl
       \tl_set_eq:NN\l_mix_coo_tl\g_mix_opt_coo_tl
       \tl_set_eq:NN\l_mix_ctoc_tl\g_mix_opt_ctoc_tl
       \tl_set_eq:NN\l_mix_ciiw_tl\g_mix_opt_ciiw_tl
@@ -1020,18 +1081,21 @@
 
     }
     \mix_pdfobj:nnn{}{dict}{
-      /Subtype/\bool_if:NTF\g_mix_iiid_bool{3D}{Flash}
+      /Subtype/\g_mix_mainassetsub_tl
       /Asset~\g_mix_mainasset_tl
       \bool_if:NF\g_mix_iiid_bool{
         /Params~<<
-          /Binding/Background
+          /Binding/Foreground
           \tl_if_blank:VF\g_mix_flashvars_tl{
-           /FlashVars~(\g_mix_flashvars_tl)
+            /FlashVars~(\g_mix_flashvars_tl)
           }
         >>
       }
     }
-    \mix_pdfobj:nnn{}{dict}{/Instances~[\g_mix_pdflastobj_tl]}%
+    \mix_pdfobj:nnn{}{dict}{
+      /Subtype/\g_mix_mainassetsub_tl
+      /Instances~[\g_mix_pdflastobj_tl]
+    }%
     \mix_pdfobj:nnn{}{dict}{
       /Assets~<</Names~[\g_mix_assets_tl]>>
       /Configurations~[\g_mix_pdflastobj_tl]
@@ -1135,34 +1199,6 @@
 \group_end:
 \cs_set_eq:NN\mix_uriend:\group_end:
 
-% macro to format a real number in tl variable
-% * to show at most 9 places after `.'
-% * trailing zeros removed
-\cs_new_protected:Nn\mix_format_num:N{
-  \fp_compare:nNnF{#1}={\fp_to_int:n{#1}}{
-    \tl_set:Nx#1{\exp_after:wN\mix_format_num:w#1\q_stop}
-  }
-}
-\cs_new:Npn\mix_format_num:w#1.#2\q_stop{
-  #1.\exp_after:wN\mix_trim_places:w#2000000000\q_stop
-}
-\cs_new:Npn\mix_trim_places:w#1#2#3#4#5#6#7#8#9\q_stop{
-  \mix_trim_zeros:f{\exp_after:wN\tl_head:w#9\q_stop#8#7#6#5#4#3#2#1}
-}
-\cs_new:Nn\mix_trim_zeros:n{
-  \exp_after:wN\mix_trim_zeros:w#1\q_stop
-}
-\cs_generate_variant:Nn\mix_trim_zeros:n{f}
-\cs_new:Npn\mix_trim_zeros:w#1#2\q_stop{
-  \str_if_eq:nnTF{#1}{0}{
-    \int_compare:nNnTF{\tl_length:n{#2}}>{\c_one}{
-      \exp_after:wN\mix_trim_zeros:w#2\q_stop
-    }{#2}
-  }{
-    \tl_reverse:n{#2}#1
-  }
-}
-
 %macro for building the C2W transformation matrix
 \cs_new:Npn\mix_calc_ciiw:w#1~#2~#3~#4~#5~#6\q_stop{
   % #1,#2,#3 centre of orbit coordinates (coo)
@@ -1247,30 +1283,18 @@
   \fp_set:Nn\l_mix_transz_fp{#3 - \l_mix_roo_fp*\l_mix_viewz_fp}
 
   %format elements of transformation matrix
-  \tl_set:Nx\l_mix_leftx_tl {\fp_use:N\l_mix_leftx_fp }
-  \tl_set:Nx\l_mix_lefty_tl {\fp_use:N\l_mix_lefty_fp }
-  \tl_set:Nx\l_mix_leftz_tl {\fp_use:N\l_mix_leftz_fp }
-  \tl_set:Nx\l_mix_upx_tl   {\fp_use:N\l_mix_upx_fp   }
-  \tl_set:Nx\l_mix_upy_tl   {\fp_use:N\l_mix_upy_fp   }
-  \tl_set:Nx\l_mix_upz_tl   {\fp_use:N\l_mix_upz_fp   }
-  \tl_set:Nx\l_mix_viewx_tl {\fp_use:N\l_mix_viewx_fp }
-  \tl_set:Nx\l_mix_viewy_tl {\fp_use:N\l_mix_viewy_fp }
-  \tl_set:Nx\l_mix_viewz_tl {\fp_use:N\l_mix_viewz_fp }
-  \tl_set:Nx\l_mix_transx_tl{\fp_use:N\l_mix_transx_fp}
-  \tl_set:Nx\l_mix_transy_tl{\fp_use:N\l_mix_transy_fp}
-  \tl_set:Nx\l_mix_transz_tl{\fp_use:N\l_mix_transz_fp}
-  \mix_format_num:N\l_mix_leftx_tl
-  \mix_format_num:N\l_mix_lefty_tl
-  \mix_format_num:N\l_mix_leftz_tl
-  \mix_format_num:N\l_mix_upx_tl
-  \mix_format_num:N\l_mix_upy_tl
-  \mix_format_num:N\l_mix_upz_tl
-  \mix_format_num:N\l_mix_viewx_tl
-  \mix_format_num:N\l_mix_viewy_tl
-  \mix_format_num:N\l_mix_viewz_tl
-  \mix_format_num:N\l_mix_transx_tl
-  \mix_format_num:N\l_mix_transy_tl
-  \mix_format_num:N\l_mix_transz_tl
+  \tl_set:Nx\l_mix_leftx_tl {\fp_to_decimal:n{round((\l_mix_leftx_fp),9)} }
+  \tl_set:Nx\l_mix_lefty_tl {\fp_to_decimal:n{round((\l_mix_lefty_fp),9)} }
+  \tl_set:Nx\l_mix_leftz_tl {\fp_to_decimal:n{round((\l_mix_leftz_fp),9)} }
+  \tl_set:Nx\l_mix_upx_tl   {\fp_to_decimal:n{round((\l_mix_upx_fp),9)}   }
+  \tl_set:Nx\l_mix_upy_tl   {\fp_to_decimal:n{round((\l_mix_upy_fp),9)}   }
+  \tl_set:Nx\l_mix_upz_tl   {\fp_to_decimal:n{round((\l_mix_upz_fp),9)}   }
+  \tl_set:Nx\l_mix_viewx_tl {\fp_to_decimal:n{round((\l_mix_viewx_fp),9)} }
+  \tl_set:Nx\l_mix_viewy_tl {\fp_to_decimal:n{round((\l_mix_viewy_fp),9)} }
+  \tl_set:Nx\l_mix_viewz_tl {\fp_to_decimal:n{round((\l_mix_viewz_fp),9)} }
+  \tl_set:Nx\l_mix_transx_tl{\fp_to_decimal:n{round((\l_mix_transx_fp),9)}}
+  \tl_set:Nx\l_mix_transy_tl{\fp_to_decimal:n{round((\l_mix_transy_fp),9)}}
+  \tl_set:Nx\l_mix_transz_tl{\fp_to_decimal:n{round((\l_mix_transz_fp),9)}}
 
   %concat elements to matrix
   \tl_set:Nx\l_mix_ciiw_tl{
@@ -1291,19 +1315,16 @@
 
 % 3D view object
 \cs_new:Nn\mix_view:n{
-  \tl_set:Nx\l_mix_oscale_tl{\fp_use:N\l_mix_oscale_fp}
-  \mix_format_num:N\l_mix_oscale_tl
-  \tl_set:Nx\l_mix_aac_tl{\fp_use:N\l_mix_aac_fp}
-  \mix_format_num:N\l_mix_aac_tl
-  \tl_set:Nx\l_mix_roo_tl{\fp_use:N\l_mix_roo_fp}
-  \mix_format_num:N\l_mix_roo_tl
+  \tl_set:Nx\l_mix_oscale_tl{\fp_to_decimal:n{round((\l_mix_oscale_fp),9)}}
+  \tl_set:Nx\l_mix_aac_tl{\fp_to_decimal:n{round((\l_mix_aac_fp),9)}}
+  \tl_set:Nx\l_mix_roo_tl{\fp_to_decimal:n{round((\l_mix_roo_fp),9)}}
   \mix_pdfobj:nnn{}{dict}{
     /MS/M
     /P<<
       \bool_if:NTF\l_mix_iiidortho_bool{
-        /Subtype/O/OS~\l_mix_oscale_tl/OB/Min
+        /Subtype/O/OS~\l_mix_oscale_tl/OB/\l_mix_psob_tl
       }{
-        /Subtype/P/FOV~\l_mix_aac_tl/PS/Min
+        /Subtype/P/FOV~\l_mix_aac_tl/PS/\l_mix_psob_tl
       }
     >>
     /C2W~[\l_mix_ciiw_tl]
@@ -1476,8 +1497,8 @@
 
   3Droo .code:n = {
     \fp_gset:Nn\g_mix_opt_roo_fp{abs(#1)}
-    \fp_compare:nNnT\g_mix_opt_roo_fp=\c_zero_fp{
-      \fp_set:Nn\g_mix_opt_roo_fp{1e-8}}
+    \fp_compare:nNnT\g_mix_opt_roo_fp<{1e-9}{
+      \fp_gset:Nn\g_mix_opt_roo_fp{1e-9}}
     \bool_gset_true:N\g_mix_opt_iiidview_bool
     \bool_set_true:N\l_mix_roo_bool
   },
@@ -1521,18 +1542,23 @@
   },
   3Drender .value_required:,
 
+  3Dpsob .code:n = {
+    \tl_gset:Nx\g_mix_opt_psob_tl{#1}
+  },
+  3Dpsob .value_required:,
+
   3Dviews .code:n = {
     \file_if_exist:nTF{#1}{
       \file_add_path:nN{#1}\l_mix_temp_tl
       \tl_gset_eq:NN\g_mix_vfile_tl\l_mix_temp_tl
     }{
-      \msg_error:nnxx{media9}{file~not~found}{#1}
+      \msg_error:nnx{media9}{file~not~found}{#1}
     }
   },
   3Dviews .value_required:,
 
   unknown .code:n = {
-    \msg_error:nnx{media9}{unknown~option}{\exp_not:V\l_keys_key_tl}
+    \msg_error:nnx{media9}{unknown~option}{\l_keys_key_tl}
   },
 }
 
@@ -1700,8 +1726,8 @@
         {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{ROO}{a~VIEW}
     }
     \fp_set:Nn\l_mix_roo_fp{abs(#1)}
-    \fp_compare:nNnT\l_mix_roo_fp=\c_zero_fp{
-      \fp_set:Nn\l_mix_roo_fp{1e-8}}
+    \fp_compare:nNnT\l_mix_roo_fp<{1e-9}{
+      \fp_set:Nn\l_mix_roo_fp{1e-9}}
     \bool_set_true:N\l_mix_roo_bool
   },
   ROO .value_required:,
@@ -1730,6 +1756,17 @@
     }
   },
   ORTHO .default:n = {1},
+
+  PSOB .code:n = {
+    \int_compare:nTF{\l_mix_level_tl=\c_zero}{
+      \tl_set:Nx\l_mix_psob_tl{#1}
+    }{
+      \msg_error:nnxxxx{media9}{key~not~allowed}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}
+        {PSOB}{a~VIEW}
+    }
+  },
+  PSOB .value_required:,
 
   ROLL .code:n = {
     \int_compare:nF{\l_mix_level_tl=\c_zero}{
@@ -1850,8 +1887,7 @@
     \seq_set_split:Nnn\l_mix_args_seq{~}{#1}
     \seq_map_inline:Nn\l_mix_args_seq{
       \fp_set:Nn\l_mix_tmpa_fp{##1}
-      \tl_set:Nx\l_mix_tmpa_tl{\fp_use:N\l_mix_tmpa_fp}
-      \mix_format_num:N\l_mix_tmpa_tl
+      \tl_set:Nx\l_mix_tmpa_tl{\fp_to_decimal:n{round((\l_mix_tmpa_fp),9)}}
       \tl_put_right:Nx\l_mix_ndtrans_tl{~\l_mix_tmpa_tl}
     }
   },
@@ -1880,12 +1916,9 @@
     }
     \tl_set:Nx\l_mix_args_tl{#1\space}
     \exp_after:wN\mix_parse_vect:w\l_mix_args_tl\q_stop
-    \tl_set:Nx\l_mix_x_tl{\fp_use:N\l_mix_x_fp}
-    \mix_format_num:N\l_mix_x_tl
-    \tl_set:Nx\l_mix_y_tl{\fp_use:N\l_mix_y_fp}
-    \mix_format_num:N\l_mix_y_tl
-    \tl_set:Nx\l_mix_z_tl{\fp_use:N\l_mix_z_fp}
-    \mix_format_num:N\l_mix_z_tl
+    \tl_set:Nx\l_mix_x_tl{\fp_to_decimal:n{round((\l_mix_x_fp),9)}}
+    \tl_set:Nx\l_mix_y_tl{\fp_to_decimal:n{round((\l_mix_y_fp),9)}}
+    \tl_set:Nx\l_mix_z_tl{\fp_to_decimal:n{round((\l_mix_z_fp),9)}}
     \tl_set:Nx\l_mix_cscentre_tl{
       \l_mix_x_tl\space
       \l_mix_y_tl\space
@@ -1908,10 +1941,8 @@
     \fp_set:Nn\l_mix_roty_fp{-\l_mix_roty_fp}
     %rot angle of normal vec around Z axis
     \mix_angfromxy:Nnn\l_mix_rotz_fp\l_mix_x_fp\l_mix_y_fp
-    \tl_set:Nx\l_mix_roty_tl{\fp_use:N\l_mix_roty_fp}
-    \mix_format_num:N\l_mix_roty_tl
-    \tl_set:Nx\l_mix_rotz_tl{\fp_use:N\l_mix_rotz_fp}
-    \mix_format_num:N\l_mix_rotz_tl
+    \tl_set:Nx\l_mix_roty_tl{\fp_to_decimal:n{round((\l_mix_roty_fp),9)}}
+    \tl_set:Nx\l_mix_rotz_tl{\fp_to_decimal:n{round((\l_mix_rotz_fp),9)}}
     \tl_set:Nx\l_mix_csorient_tl{null~\l_mix_roty_tl\space\l_mix_rotz_tl}
   },
   NORMAL .value_required:,
