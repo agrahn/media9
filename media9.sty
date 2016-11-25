@@ -43,8 +43,8 @@
 \RequirePackage{atenddvi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2014/08/06}
-\def\g@mix@version@tl{0.46}
+\def\g@mix@date@tl{2015/01/21}
+\def\g@mix@version@tl{0.49}
 
 \def\g@mix@liiikerneldate{2014/07/20}
 \def\g@mix@liiipkgdate{2014/07/20}
@@ -52,8 +52,8 @@
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9/X compatible media}
 
-\tl_gset:Nx\g_mix_date_tl{\g@mix@date@tl}
-\tl_gset:Nx\g_mix_version_tl{\g@mix@version@tl}
+\tl_gset_eq:NN\g_mix_date_tl\g@mix@date@tl
+\tl_gset_eq:NN\g_mix_version_tl\g@mix@version@tl
 
 \cs_if_exist:NTF\msg_set:nnnn{
   \msg_set:nnnn{media9}{support~outdated}{
@@ -107,6 +107,12 @@
 \bool_new:N\g_mix_dvipdfmx_bool
 \bool_new:N\g_mix_pkgdraft_bool
 \bool_new:N\g_mix_opt_pkgwindowed_bool
+\int_new:N\g_mix_pkgresizeflag_int% resizing flag according to options given
+\tl_gset:Nn\g_mix_pkgwdarg_tl{\width}
+\tl_gset:Nn\g_mix_pkghtarg_tl{\height}
+\tl_gset:Nn\g_mix_pkgttarg_tl{\totalheight}
+\bool_new:N\g_mix_pkgiso_bool
+\tl_gset:Nn\g_mix_pkgscalearg_tl{1.0}
 \tl_gset:Nx\g_mix_pkgwinsize_tl{defaultxdefault}
 \tl_gset:Nx\g_mix_pkgwinpos_tl{cc}
 \tl_gset:Nn\g_mix_pkgact_tl{/XA}
@@ -218,6 +224,47 @@
       \tl_gset_eq:NN\g_mix_pkgwinpos_tl\g_mix_winpos_tl
     }
   },
+
+  width .code:n = {
+    \tl_gset:Nn\g_mix_pkgwdarg_tl{#1}
+    \tl_if_exist:NF\l_mix_pkgwd_tl{
+      \int_gadd:Nn\g_mix_pkgresizeflag_int{\c_four}
+      \tl_set:Nn\l_mix_pkgwd_tl{}
+    }
+  },
+  width .value_required:,
+
+  height .code:n = {
+    \tl_gset:Nn\g_mix_pkghtarg_tl{#1}
+    \tl_if_exist:NF\l_mix_pkght_tl{
+      \int_gadd:Nn\g_mix_pkgresizeflag_int{\c_two}
+      \tl_set:Nn\l_mix_pkght_tl{}
+    }
+  },
+  height .value_required:,
+
+  totalheight .code:n = {
+    \tl_gset:Nn\g_mix_pkgttarg_tl{#1}
+    \tl_if_exist:NF\l_mix_pkgtt_tl{
+      \int_gadd:Nn\g_mix_pkgresizeflag_int{\c_one}
+      \tl_set:Nn\l_mix_pkgtt_tl{}
+    }
+  },
+  height .value_required:,
+
+  depth .code:n = {
+    \msg_warning:nnnn{media9}{deprecated~option}{depth}{
+      Ignoring~`depth'~option.
+    }
+  },
+
+  keepaspectratio .choice:,
+  keepaspectratio / true .code:n = {\bool_gset_true:N\g_mix_pkgiso_bool},
+  keepaspectratio / false .code:n = {\bool_gset_false:N\g_mix_pkgiso_bool},
+  keepaspectratio .default:n = {true},
+
+  scale .code:n = {\tl_gset:Nx\g_mix_pkgscalearg_tl{#1}},
+  scale .value_required:,
 
   %3D specific options
   3Dplaytype .choice:,
@@ -381,12 +428,15 @@
   \tl_gset_eq:NN\g_mix_usrpbtn_tl\g_mix_pkgpbtn_tl
   \seq_gclear:N\g_mix_res_seq
   \seq_gclear:N\g_mix_script_seq
-  \int_gzero:N\g_mix_resizeflag_int
-  \tl_gset:Nn\g_mix_scalearg_tl{1.0}
-  \tl_gset:Nn\g_mix_wdarg_tl{\width}
-  \tl_gset:Nn\g_mix_htarg_tl{\height}
-  \tl_gset:Nn\g_mix_ttarg_tl{\totalheight}
-  \bool_gset_false:N\g_mix_usriso_bool %keepaspectratio
+  \int_gset_eq:NN\g_mix_resizeflag_int\g_mix_pkgresizeflag_int
+  \tl_set_eq:NN\l_mix_usrwd_tl\l_mix_pkgwd_tl
+  \tl_set_eq:NN\l_mix_usrht_tl\l_mix_pkght_tl
+  \tl_set_eq:NN\l_mix_usrtt_tl\l_mix_pkgtt_tl
+  \tl_gset_eq:NN\g_mix_wdarg_tl\g_mix_pkgwdarg_tl
+  \tl_gset_eq:NN\g_mix_htarg_tl\g_mix_pkghtarg_tl
+  \tl_gset_eq:NN\g_mix_ttarg_tl\g_mix_pkgttarg_tl
+  \bool_gset_eq:NN\g_mix_usriso_bool\g_mix_pkgiso_bool
+  \tl_gset_eq:NN\g_mix_scalearg_tl\g_mix_pkgscalearg_tl
   \tl_gset_eq:NN\g_mix_transp_tl\g_mix_pkgtransp_tl
   \tl_gset_eq:NN\g_mix_contextclick_tl\g_mix_pkgcontextclick_tl
   \bool_gset_eq:NN\g_mix_opt_windowed_bool\g_mix_opt_pkgwindowed_bool
@@ -485,46 +535,46 @@
 
 %macros for adding AcroForm and OCProperties dicts to PDF Catalog
 \tl_if_exist:cF{@anim@fields}{\tl_gset:cn{@anim@fields}{}}%takes Field object refs
-\cs_new:Nn\mix_insert_acroform:{    %AcroForm dict
-  \tl_if_exist:cF{Acro@Form@added}{
-    \AtEndDvi{
-      \tl_if_empty:NF\@anim@fields{
-        \mix_pdfobj:nnn{}{array}{\@anim@fields}
-        \mix_pdfcatalog:n{
-          /AcroForm~<</Fields~\g_mix_pdflastobj_tl/NeedAppearances~false>>}
-      }
+\tl_if_exist:cF{Acro@Form@added}{ %AcroForm dict
+  \AtEndDvi{
+    \tl_if_empty:NF\@anim@fields{
+      \mix_pdfobj:nnn{}{array}{\@anim@fields}
+      \mix_pdfcatalog:n{
+        /AcroForm~<</Fields~\g_mix_pdflastobj_tl/NeedAppearances~false>>}
     }
-    \tl_gset:cn{Acro@Form@added}{}
   }
+  \tl_gset:cn{Acro@Form@added}{}
 }
 
-\tl_if_exist:cF{@anim@ocgs}{\tl_gset:cn{@anim@ocgs}{}} %takes ocg object refs
-\tl_if_exist:cF{@anim@offocgs}{\tl_gset:cn{@anim@offocgs}{}}
-\cs_new:Nn\mix_insert_ocprops:{%OCProperties dict
-  \tl_if_exist:cF{oc@props@added}{
-    \AtEndDvi{
-      \tl_if_empty:NF\@anim@ocgs{
-        \mix_pdfobj:nnn{}{array}{\@anim@ocgs}
-        \tl_gset:Nx\g_mix_ocgarray_tl{\g_mix_pdflastobj_tl}
-        \mix_pdfobj:nnn{}{array}{\@anim@offocgs}
-        \tl_gset:Nx\g_mix_offocgarray_tl{\g_mix_pdflastobj_tl}
-        \mix_pdfcatalog:n{
-          /OCProperties~<<
-            /OCGs~\g_mix_ocgarray_tl
-            /D~<<
-              /AS~[
-                <</Event/View  /Category[/View]  /OCGs~\g_mix_ocgarray_tl>>
-                <</Event/Print /Category[/Print] /OCGs~\g_mix_ocgarray_tl>>
-                <</Event/Export/Category[/Export]/OCGs~\g_mix_ocgarray_tl>>
-              ]
-              /BaseState/ON~/OFF~\g_mix_offocgarray_tl
-            >>
+\tl_if_exist:cF{@ocgbase@ocgs}{\tl_gset:cn{@ocgbase@ocgs}{}} %takes ocg object refs
+\tl_if_exist:cF{@ocgbase@offocgs}{\tl_gset:cn{@ocgbase@offocgs}{}}
+\tl_if_exist:cF{@ocgbase@ocgorder}{\tl_gset:cn{@ocgbase@ocgorder}{}}
+\tl_if_exist:cF{oc@props@added}{
+  \AtEndDvi{
+    \tl_if_empty:NF\@ocgbase@ocgs{
+      \mix_pdfobj:nnn{}{array}{\@ocgbase@ocgs}
+      \tl_gset:Nx\g_mix_ocgarray_tl{\g_mix_pdflastobj_tl}
+      \mix_pdfobj:nnn{}{array}{\@ocgbase@offocgs}
+      \tl_gset:Nx\g_mix_offocgarray_tl{\g_mix_pdflastobj_tl}
+      \mix_pdfobj:nnn{}{array}{\@ocgbase@ocgorder}
+      \tl_gset:Nx\g_mix_ocgorderarray_tl{\g_mix_pdflastobj_tl}
+      \mix_pdfcatalog:n{
+        /OCProperties~<<
+          /OCGs~\g_mix_ocgarray_tl
+          /D~<<
+            /AS~[
+              <</Event/View  /Category[/View]  /OCGs~\g_mix_ocgarray_tl>>
+              <</Event/Print /Category[/Print] /OCGs~\g_mix_ocgarray_tl>>
+              <</Event/Export/Category[/Export]/OCGs~\g_mix_ocgarray_tl>>
+            ]
+            /BaseState/ON~/OFF~\g_mix_offocgarray_tl
+            /Order~\g_mix_ocgorderarray_tl~/ListMode/VisiblePages
           >>
-        }
+        >>
       }
     }
-    \tl_gset:cn{oc@props@added}{}
   }
+  \tl_gset:cn{oc@props@added}{}
 }
 \cs_new:Nn\mix_insert_btnocg:{%OCG for play button overlay
   \mix_pdfobj:nnn{}{dict}{
@@ -534,8 +584,8 @@
       /Export<</ExportState/OFF>>
     >>
   }
-  \tl_gput_right:Nx\@anim@ocgs{\space\g_mix_pdflastobj_tl}
-  \tl_gput_right:Nx\@anim@offocgs{\space\g_mix_pdflastobj_tl}
+  \tl_gput_right:Nx\@ocgbase@ocgs{\space\g_mix_pdflastobj_tl}
+  \tl_gput_right:Nx\@ocgbase@offocgs{\space\g_mix_pdflastobj_tl}
   \tl_gset:Nx\g_mix_btnocg_tl{\g_mix_pdflastobj_tl}
 }
 
@@ -812,7 +862,7 @@
           {array}{
             \special{ps:~mark~\l_mix_usenum_tl~0~[#3]/PUTINTERVAL~pdfmark~}
           }
-          {stream}{\special{ps:~mark~\l_mix_usenum_tl~(#3)/PUT~pdfmark~}}
+          {stream}{\special{ps::[nobreak]~mark~\l_mix_usenum_tl~(#3)/PUT~pdfmark~}}
           {fstream}{
             \tl_set:Nn\l_mix_offset_tl{0}
             \tl_set:Nx\l_mix_fsize_tl{\mix_filesize:n{#3}}
@@ -1058,7 +1108,7 @@
   \bool_if:NTF\l_mix_url_bool{
     \cs_if_exist:cF{url_#1}{
       \mix_pdfobj:nnn{}{dict}{/FS/URL/F(#1)}
-      \tl_gset:cx{url_#1}{\g_mix_pdflastobj_tl}%
+      \tl_gset:cx{url_#1}{\g_mix_pdflastobj_tl}
     }
     %every new url should be added to assets tree of the current annot
     \cs_if_exist:cF{url_\int_use:c{g_mix_rmcnt_int}_#1}{
@@ -1226,7 +1276,8 @@
         \box_resize_to_ht_plus_dp:Nn#1{\g_mix_tt_tl}
       }
       {\c_two}{
-        \hbox_set:Nn#1{\resizebox{!}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+        %\hbox_set:Nn#1{\resizebox{!}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+        \box_resize_to_ht:Nn#1{\g_mix_ht_tl}
       }
       {\c_four}{
         %\hbox_set:Nn#1{\resizebox{\g_mix_wd_tl}{!}{\box_use_clear:N#1}}
@@ -1263,11 +1314,13 @@
             %\hbox_set:Nn#1{\resizebox{\g_mix_wd_tl}{!}{\box_use_clear:N#1}}
             \box_resize_to_wd:Nn#1{\g_mix_wd_tl}
           }{
-            \hbox_set:Nn#1{\resizebox{!}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+            %\hbox_set:Nn#1{\resizebox{!}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+            \box_resize_to_ht:Nn#1{\g_mix_ht_tl}
           }
         }{
-          \hbox_set:Nn#1{
-            \resizebox{\g_mix_wd_tl}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+          %\hbox_set:Nn#1{
+          %  \resizebox{\g_mix_wd_tl}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+          \box_resize_to_wd_and_ht:Nnn#1{\g_mix_wd_tl}{\g_mix_ht_tl}
         }
       }
     }
@@ -1325,6 +1378,7 @@
 
 \ior_new:N\l_mix_vfile_stream %file stream for 3D views files
 \NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
+  \mix_uriend:
   \group_begin:
   \leavevmode
   %empty stream as appearance dummy
@@ -1334,17 +1388,17 @@
     \tl_gset:Nx\g_mix_appearance_tl{\g_mix_pdflastxform_tl}
   }
   \mix_reset:
-  {\mix_uribegin: %treat URI characters correctly
+  \mix_uribegin: %treat URI characters correctly
   \keys_set:nn{media9/user}{#1}
-  \mix_uriend:}
+  \mix_uriend:
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{~&}{&}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{&~}{&}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{~=}{=}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{=~}{=}
   \tl_gtrim_spaces:N\g_mix_flashvars_tl
-  %
+
   \cs_if_exist:NT\Ginput@path{\cs_set_eq:NN\input@path\Ginput@path}
-  %
+
   \hbox_set:Nn\l_mix_poster_box{\group_begin:#2\group_end:}
   %\hbox_set:Nn\l_mix_poster_box{#2}
   \mix_scale:n{\l_mix_poster_box}
@@ -1359,7 +1413,9 @@
       \mix_keytoaux_now:nn{ann@\g_mix_usrlabel_tl}{draft}
     }
     \tl_if_blank:oTF{#2}{
+      \mix_uribegin: %treat URI characters correctly
       \mix_draftbox:n{\tl_to_str:n{#3}}
+      \mix_uriend:
     }{
       \hbox_to_wd:nn{\g_mix_wd_tl}{
         \vrule~width~\c_zero_dim~height~\g_mix_ht_tl~depth~\g_mix_dp_tl
@@ -1386,7 +1442,7 @@
       \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
     }
     %embed main asset
-	{\mix_uribegin:
+	  \mix_uribegin:
     \mix_embedasset:n{#3}
     \bool_if:nTF{
       \str_if_eq_p:Vn\l_mix_ext_tl{prc}||\str_if_eq_p:Vn\l_mix_ext_tl{u3d}
@@ -1403,7 +1459,7 @@
       }{\tl_gset:Nn\g_mix_mainassetsub_tl{Flash}}
     }
     \tl_gset:Nx\g_mix_mainasset_tl{~\g_mix_lastasset_tl}
-    \mix_uriend:}
+    \mix_uriend:
     %secondary assets (added by addresource)
     \seq_map_function:NN\g_mix_res_seq\mix_embedasset:n
     \seq_map_inline:Nn\g_mix_script_seq{
@@ -1486,7 +1542,7 @@
       /Type/RichMediaConfiguration
       /Subtype/\g_mix_mainassetsub_tl
       /Instances~[\g_mix_pdflastobj_tl]
-    }%
+    }
     \mix_pdfobj:nnn{}{dict}{
       /Type/RichMediaContent
       /Assets~<</Names~[\g_mix_assets_tl]>>
@@ -1643,20 +1699,27 @@
   }
   \group_end:
 }
+\tl_set_eq:NN\l_mix_includemedia_tl\includemedia
+\tl_set:Nn\includemedia{\mix_uribegin:\l_mix_includemedia_tl}
 
-%defines environment \mix_uribegin: ... \mix_uriend: to sanitize possibly
-%active chars in URLs (RFC 2396) and path specifications;
-%code contributed by E. Gregorio
+%environment \mix_uribegin: ... \mix_uriend: to sanitize possibly
+%active chars in URLs (RFC 2396), path specifications and JavaScript
 \group_begin:
 \char_set_catcode_active:N\~
 \cs_new:Npn\mix_uribegin:{
   \group_begin:
-  \tl_map_inline:nn{";/?:@&=+$|,-_.!~*'()}{
+  %code contributed by E. Gregorio
+  \tl_map_inline:nn{.:;?!/"'*+,->=<$@][)(^_`|~}{
     \group_begin:
     \char_set_lccode:nn{`\~}{`##1}
     \tl_to_lowercase:n{\group_end:\cs_set:Npn~}{\token_to_str:N##1}
   }
+  \cs_set:Npn\#{\token_to_str:N\#}
+  \cs_set:Npn\&{\token_to_str:N\&}
   \cs_set:Npn\%{\token_to_str:N\%}
+  \cs_set:Npn\\{\token_to_str:N\\}
+  \cs_set:Npn\{{\token_to_str:N\{}
+  \cs_set:Npn\}{\token_to_str:N\}}
 }
 \group_end:
 \cs_set_eq:NN\mix_uriend:\group_end:
@@ -1686,9 +1749,9 @@
     \fp_set:Nn\l_mix_upz_fp{0.0}
   }{% bottom view
     %up-vector
-    \fp_set:Nn\l_mix_upx_fp{0.0}%
-    \fp_set:Nn\l_mix_upy_fp{-1.0}%
-    \fp_set:Nn\l_mix_upz_fp{0.0}%
+    \fp_set:Nn\l_mix_upx_fp{0.0}
+    \fp_set:Nn\l_mix_upy_fp{-1.0}
+    \fp_set:Nn\l_mix_upz_fp{0.0}
   }
   \fp_set:Nn\l_mix_sumxy_fp{abs(\l_mix_viewx_fp) + abs(\l_mix_viewy_fp)}
   \fp_compare:nNnF\l_mix_sumxy_fp=\c_zero_fp{% other views than top and bottom
@@ -1848,27 +1911,30 @@
 
   width .code:n = {
     \tl_gset:Nn\g_mix_wdarg_tl{#1}
-    \int_gadd:Nn\g_mix_resizeflag_int{\c_four}
+    \tl_if_exist:NF\l_mix_usrwd_tl{
+      \int_gadd:Nn\g_mix_resizeflag_int{\c_four}
+      \tl_set:Nn\l_mix_usrwd_tl{}
+    }
   },
   width .value_required:,
 
   height .code:n = {
     \tl_gset:Nn\g_mix_htarg_tl{#1}
-    \int_gadd:Nn\g_mix_resizeflag_int{\c_two}
+    \tl_if_exist:NF\l_mix_usrht_tl{
+      \int_gadd:Nn\g_mix_resizeflag_int{\c_two}
+      \tl_set:Nn\l_mix_usrht_tl{}
+    }
   },
   height .value_required:,
 
   totalheight .code:n = {
     \tl_gset:Nn\g_mix_ttarg_tl{#1}
-    \int_gadd:Nn\g_mix_resizeflag_int{\c_one}
+    \tl_if_exist:NF\l_mix_usrtt_tl{
+      \int_gadd:Nn\g_mix_resizeflag_int{\c_one}
+      \tl_set:Nn\l_mix_usrtt_tl{}
+    }
   },
   height .value_required:,
-
-%  depth .code:n = {
-%    \tl_gset:Nn\g_mix_dparg_tl{#1}
-%    \int_gadd:Nn\g_mix_resizeflag_int{\c_one}
-%  },
-%  depth .value_required:,
 
   depth .code:n = {
     \msg_warning:nnnn{media9}{deprecated~option}{depth}{
@@ -2048,7 +2114,17 @@
   3Dlights .value_required:,
 
   3Drender .code:n = {
-    \tl_gset:Nx\g_mix_opt_rm_tl{/RM<</Subtype/#1>>}
+    \regex_extract_once:nnNTF{
+      ^(Transparent(?:Wireframe)?):(0|0\.[0-9]*|\.[0-9]+|1\.?|1\.0*)$
+    }{#1}\l_mix_tmp_seq{
+      \seq_pop_right:NN\l_mix_tmp_seq\l_mix_alpha_tl
+      \seq_pop_right:NN\l_mix_tmp_seq\l_mix_rmode_tl
+      \tl_gset:Nx\g_mix_opt_rm_tl{
+        /RM<</Subtype/\l_mix_rmode_tl/O~\l_mix_alpha_tl>>
+      }
+    }{
+      \tl_gset:Nx\g_mix_opt_rm_tl{/RM<</Subtype/#1>>}
+    }
   },
   3Drender .value_required:,
 
@@ -2374,23 +2450,71 @@
   UTFNAME .default:n = {},
 
   OPACITY .code:n = {
-    \int_compare:nF{\l_mix_level_tl=\c_one}{
+    \bool_if:nF{
+      \int_compare_p:n{\l_mix_level_tl=\c_one} ||
+      \int_compare_p:n{\l_mix_level_tl=\c_two}
+    }{
       \msg_error:nnxxxx{media9}{key~not~allowed}
-        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{OPACITY}{PART}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}
+        {OPACITY}{PART~or~CROSSSECT}
     }
-    \tl_set:Nx\l_mix_ndop_tl{/O~#1}
+    \int_compare:nT{\l_mix_level_tl=\c_one}{ %part
+      \tl_set:Nx\l_mix_ndop_tl{/O~#1}
+    }
+    \int_compare:nT{\l_mix_level_tl=\c_two}{ %crosssect
+      \tl_set:Nx\l_mix_csop_tl{/PO~#1}
+    }
   },
   OPACITY .value_required:,
 
   VISIBLE .choice_code:n = {
-    \int_compare:nF{\l_mix_level_tl=\c_one}{
+    \bool_if:nF{
+      \int_compare_p:n{\l_mix_level_tl=\c_one} ||
+      \int_compare_p:n{\l_mix_level_tl=\c_two}
+    }{
       \msg_error:nnxxxx{media9}{key~not~allowed}
-        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{VISIBLE}{PART}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}
+        {VISIBLE}{PART~or~CROSSSECT}
     }
-    \tl_set:Nx\l_mix_ndvi_tl{/V~\l_keys_choice_tl}
+    \int_compare:nT{\l_mix_level_tl=\c_one}{ %part
+      \tl_set:Nx\l_mix_ndvi_tl{/V~\l_keys_choice_tl}
+    }
+    \int_compare:nT{\l_mix_level_tl=\c_two}{ %crosssect
+      \tl_set:Nx\l_mix_cspv_tl{/PV~\l_keys_choice_tl}
+    }
   },
   VISIBLE .generate_choices:n = {true,false},
   VISIBLE .default:n = {true},
+
+  INTERSECTIONVISIBLE .choice_code:n = {
+    \int_compare:nF{\l_mix_level_tl=\c_two}{
+      \msg_error:nnxxxx{media9}{key~not~allowed}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{INTERSECTIONVISIBLE}
+                                                                  {CROSSSECT}
+    }
+    \tl_set:Nx\l_mix_csiv_tl{/IV~\l_keys_choice_tl}
+  },
+  INTERSECTIONVISIBLE .generate_choices:n = {true,false},
+  INTERSECTIONVISIBLE .default:n = {true},
+
+  PLANECOLOR .code:n = {
+    \int_compare:nF{\l_mix_level_tl=\c_two}{
+      \msg_error:nnxxxx{media9}{key~not~allowed}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{PLANECOLOR}{CROSSSECT}
+    }
+    \tl_set:Nx\l_mix_cspc_tl{/PC~[/DeviceRGB~#1]}
+  },
+  PLANECOLOR .value_required:,
+
+  INTERSECTIONCOLOR .code:n = {
+    \int_compare:nF{\l_mix_level_tl=\c_two}{
+      \msg_error:nnxxxx{media9}{key~not~allowed}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{INTERSECTIONCOLOR}
+                                                                {CROSSSECT}
+    }
+    \tl_set:Nx\l_mix_csic_tl{/IC~[/DeviceRGB~#1]}
+  },
+  INTERSECTIONCOLOR .value_required:,
 
   TRANSFORM .code:n = {
     \int_compare:nF{\l_mix_level_tl=\c_one}{
@@ -2416,9 +2540,14 @@
         {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}
     }
     \tl_set:Nn\l_mix_level_tl{\c_two}
-    %default part settings
+    %default settings
     \tl_set:Nn\l_mix_cscentre_tl{0~0~0} %centre of clipping plane
     \tl_set:Nn\l_mix_csorient_tl{null~0~0} %orientation of plane
+    \tl_clear:N\l_mix_csop_tl %opacity
+    \tl_clear:N\l_mix_cspv_tl %plane visibility
+    \tl_clear:N\l_mix_cspc_tl %plane colour
+    \tl_clear:N\l_mix_csic_tl %intersection colour
+    \tl_clear:N\l_mix_csiv_tl %intersection visibility
   },
   CROSSSECT .value_forbidden:,
 
@@ -2499,7 +2628,8 @@
             /Type/3DCrossSection
             /C~[\l_mix_cscentre_tl]
             /O~[\l_mix_csorient_tl]
-            /IV~true
+            \l_mix_csop_tl\l_mix_cspv_tl\l_mix_cspc_tl
+            \l_mix_csic_tl\l_mix_csiv_tl
           }
           \tl_put_right:Nx\l_mix_saarray_tl{~\g_mix_pdflastobj_tl}
           \tl_set:Nn\l_mix_cscount_tl{\c_one}
@@ -2718,6 +2848,7 @@
 %create media buttons
 \int_new:N\g_mix_mbtncnt_int
 \NewDocumentCommand\mediabutton{O{}m}{%#1 options, #2 normal button text
+  \mix_uriend:
   \group_begin:
   \leavevmode
   %reset various variables
@@ -2727,10 +2858,10 @@
   \tl_gclear:N\g_mix_tooltip_tl
   %process options
   \bool_gset_eq:NN\g_mix_btndraft_bool\g_mix_pkgdraft_bool
-  {\mix_uribegin: %treat URI characters correctly
+  \mix_uribegin: %treat URI characters correctly
   \keys_set:nn{media9/mbtndraft}{#1} %detect draft/final on first pass
   \bool_if:NF\g_mix_btndraft_bool{\keys_set:nn{media9/mbtn}{#1}}
-  \mix_uriend:}
+  \mix_uriend:
   %normal button appearance
   \hbox_set:Nn\l_mix_poster_box{#2}
   \tl_set:Nx\width {\dim_use:N\box_wd:N\l_mix_poster_box}
@@ -2771,4 +2902,5 @@
   }
   \group_end:
 }
-\mix_insert_ocprops:\mix_insert_acroform:
+\tl_set_eq:NN\l_mix_mediabutton_tl\mediabutton
+\tl_set:Nn\mediabutton{\mix_uribegin:\l_mix_mediabutton_tl}
