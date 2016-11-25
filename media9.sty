@@ -40,10 +40,11 @@
 \RequirePackage{xparse}
 \RequirePackage{ifpdf}
 \RequirePackage{atbegshi}
+\RequirePackage{atenddvi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2014/03/21}
-\def\g@mix@version@tl{0.42}
+\def\g@mix@date@tl{2014/06/25}
+\def\g@mix@version@tl{0.45}
 
 \def\g@mix@liiikerneldate{2013/07/28}
 \def\g@mix@liiipkgdate{2013/07/28}
@@ -102,6 +103,7 @@
 }
 
 \bool_new:N\g_mix_pkgbigfiles_bool
+\bool_new:N\g_mix_pkgattach_bool
 \bool_new:N\g_mix_dvipdfmx_bool
 \bool_new:N\g_mix_pkgdraft_bool
 \bool_new:N\g_mix_opt_pkgwindowed_bool
@@ -139,9 +141,9 @@
 \cs_new:Npn\mix_parse_winsizearg:w#1x#2\q_stop{
   \str_if_eq:nnTF{#1}{default}{
     \tl_gset:Nx\tl_mix_fltwd{
-      \fp_to_int:n{1.522*\__dim_strip_bp:n{\l_mix_wd_tl}}}
+      \fp_to_int:n{1.522*\__dim_strip_bp:n{\g_mix_wd_tl}}}
     \tl_gset:Nx\tl_mix_fltht{
-      \fp_to_int:n{1.522*\__dim_strip_bp:n{\l_mix_tt_tl}}}
+      \fp_to_int:n{1.522*\__dim_strip_bp:n{\g_mix_tt_tl}}}
   }{
     \tl_gset:Nn\tl_mix_fltwd{#1}
     \tl_gset:Nn\tl_mix_fltht{#2}
@@ -166,6 +168,11 @@
   final / true .code:n = {\bool_gset_false:N\g_mix_pkgdraft_bool},
   final / false .code:n = {\bool_gset_true:N\g_mix_pkgdraft_bool},
   final .default:n = {true},
+
+  attachfiles .choice:,
+  attachfiles / true .code:n = {\bool_gset_true:N\g_mix_pkgattach_bool},
+  attachfiles / false .code:n = {\bool_gset_false:N\g_mix_pkgattach_bool},
+  attachfiles .default:n = {true},
 
   noplaybutton .choice:,
   noplaybutton / true .code:n = {\tl_gset:Nn\g_mix_pkgpbtn_tl{none}},
@@ -370,6 +377,7 @@
   \box_clear:N\l_mix_poster_box
   \tl_clear:N\l_mix_scripts_tl
   \bool_gset_eq:NN\g_mix_usrdraft_bool\g_mix_pkgdraft_bool
+  \bool_gset_eq:NN\g_mix_usrattach_bool\g_mix_pkgattach_bool
   \tl_gset_eq:NN\g_mix_usrpbtn_tl\g_mix_pkgpbtn_tl
   \seq_gclear:N\g_mix_res_seq
   \seq_gclear:N\g_mix_script_seq
@@ -377,7 +385,8 @@
   \tl_gset:Nn\g_mix_scalearg_tl{1.0}
   \tl_gset:Nn\g_mix_wdarg_tl{\width}
   \tl_gset:Nn\g_mix_htarg_tl{\height}
-  \tl_gset:Nn\g_mix_dparg_tl{\depth}
+  \tl_gset:Nn\g_mix_ttarg_tl{\totalheight}
+  \bool_gset_false:N\g_mix_usriso_bool %keepaspectratio
   \tl_gset_eq:NN\g_mix_transp_tl\g_mix_pkgtransp_tl
   \tl_gset_eq:NN\g_mix_contextclick_tl\g_mix_pkgcontextclick_tl
   \bool_gset_eq:NN\g_mix_opt_windowed_bool\g_mix_opt_pkgwindowed_bool
@@ -451,8 +460,10 @@
 \group_begin:
 \char_set_catcode_active:N\+\let+\space
 \tl_gset:Nx\g_mix_dpiwarning_tl{
-  {Resolution~1200~gt~VResolution~1200~gt~or~{
-  (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
+  {Resolution~1200~gt~VResolution~1200~gt~or~product~(Ghostscript)~
+  search~{pop~pop~pop~true}{pop~false}ifelse~and~{
+  (\token_to_str:N\n
+   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
    @@++++Warning:+DVI+resolution+greater+than+1200+dpi!+++++@@\token_to_str:N\n
    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
    @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
@@ -476,12 +487,12 @@
 \tl_if_exist:cF{@anim@fields}{\tl_gset:cn{@anim@fields}{}}%takes Field object refs
 \cs_new:Nn\mix_insert_acroform:{    %AcroForm dict
   \tl_if_exist:cF{Acro@Form@added}{
-    \mix_pdfobj:nnn{}{array}{}
-    \tl_gset:Nx\g_mix_fieldsarray_tl{\g_mix_pdflastobj_tl}
-    \mix_pdfcatalog:n{
-      /AcroForm~<</Fields~\g_mix_fieldsarray_tl/NeedAppearances~false>>}
-    \AtEndDocument{
-      \mix_pdfobj:nnn{\g_mix_fieldsarray_tl}{array}{\@anim@fields}
+    \AtEndDvi{
+      \tl_if_empty:NF\@anim@fields{
+        \mix_pdfobj:nnn{}{array}{\@anim@fields}
+        \mix_pdfcatalog:n{
+          /AcroForm~<</Fields~\g_mix_pdflastobj_tl/NeedAppearances~false>>}
+      }
     }
     \tl_gset:cn{Acro@Form@added}{}
   }
@@ -491,21 +502,26 @@
 \tl_if_exist:cF{@anim@offocgs}{\tl_gset:cn{@anim@offocgs}{}}
 \cs_new:Nn\mix_insert_ocprops:{%OCProperties dict
   \tl_if_exist:cF{oc@props@added}{
-    \mix_pdfobj:nnn{}{array}{}
-    \tl_gset:Nx\g_mix_ocgarray_tl{\g_mix_pdflastobj_tl}
-    \mix_pdfobj:nnn{}{array}{}
-    \tl_gset:Nx\g_mix_offocgarray_tl{\g_mix_pdflastobj_tl}
-    \mix_pdfcatalog:n{
-      /OCProperties~<<
-        /OCGs~\g_mix_ocgarray_tl
-        /D~<<
-          /BaseState/ON~/OFF~\g_mix_offocgarray_tl
-        >>
-      >>
-    }
-    \AtEndDocument{
-      \mix_pdfobj:nnn{\g_mix_ocgarray_tl}{array}{\@anim@ocgs}
-      \mix_pdfobj:nnn{\g_mix_offocgarray_tl}{array}{\@anim@offocgs}
+    \AtEndDvi{
+      \tl_if_empty:NF\@anim@ocgs{
+        \mix_pdfobj:nnn{}{array}{\@anim@ocgs}
+        \tl_gset:Nx\g_mix_ocgarray_tl{\g_mix_pdflastobj_tl}
+        \mix_pdfobj:nnn{}{array}{\@anim@offocgs}
+        \tl_gset:Nx\g_mix_offocgarray_tl{\g_mix_pdflastobj_tl}
+        \mix_pdfcatalog:n{
+          /OCProperties~<<
+            /OCGs~\g_mix_ocgarray_tl
+            /D~<<
+              /AS~[
+                <</Event/View  /Category[/View]  /OCGs~\g_mix_ocgarray_tl>>
+                <</Event/Print /Category[/Print] /OCGs~\g_mix_ocgarray_tl>>
+                <</Event/Export/Category[/Export]/OCGs~\g_mix_ocgarray_tl>>
+              ]
+              /BaseState/ON~/OFF~\g_mix_offocgarray_tl
+            >>
+          >>
+        }
+      }
     }
     \tl_gset:cn{oc@props@added}{}
   }
@@ -513,12 +529,14 @@
 \cs_new:Nn\mix_insert_btnocg:{%OCG for play button overlay
   \mix_pdfobj:nnn{}{dict}{
     /Type/OCG/Name~(MediaPlayButton\int_use:N\g_mix_rmcnt_int)
-    /Usage<</Print<</PrintState/OFF>>/Export<</ExportState/OFF>>>>
+    /Usage<<
+      /Print<</PrintState/OFF>>
+      /Export<</ExportState/OFF>>
+    >>
   }
   \tl_gput_right:Nx\@anim@ocgs{\space\g_mix_pdflastobj_tl}
   \tl_gput_right:Nx\@anim@offocgs{\space\g_mix_pdflastobj_tl}
   \tl_gset:Nx\g_mix_btnocg_tl{\g_mix_pdflastobj_tl}
-  \mix_pdfresources:
 }
 
 %commands for creating PDF objects, annots etc.
@@ -586,22 +604,35 @@
 
   \cs_new:Nn\mix_pdfcatalog:n{\pdfcatalog{#1}}
 
-  \tl_new:N\g_mix_ocgnames_tl
-  \cs_new:Nn\mix_pdfresources:{
-    \tl_gput_right:Nx\g_mix_ocgnames_tl{
-      ~/OC@rm@play@\int_use:N\g_mix_rmcnt_int\space\g_mix_btnocg_tl}
+  %marked content BDC/EMC operators
+  \int_new:N\g_mix_oc_int % object ID
+  \cs_new:Nn\mix_pdfbdc:nn{ % #1: tag, #2: prop. dict obj ID
+    \pdfliteral~direct~{#1/rm@oc\int_use:N\g_mix_oc_int\space BDC}
+    \tl_if_empty:NTF\@anim@ocmap{
+      \tl_gset:cx{@anim@ocmap}{/rm@oc\int_use:N\g_mix_oc_int\space#2}
+    }{
+      \tl_gput_right:cx{@anim@ocmap}{~/rm@oc\int_use:N\g_mix_oc_int\space#2}
+    }
     \group_begin:
     \tl_set:Nx\l_mix_temp_tl{\group_end:
       \global\pdfpageresources{\the\pdfpageresources
-        /Properties<<\g_mix_ocgnames_tl>>
+        /Properties<<\@anim@ocmap>>
       }
     }\l_mix_temp_tl
+    \int_gincr:N\g_mix_oc_int
   }
-  \cs_new:Nn\mix_pdfbdc:{
-    \pdfliteral{/OC/OC@rm@play@\int_use:N\g_mix_rmcnt_int\space BDC}
+  \tl_if_exist:cF{@anim@ocmap}{
+    \tl_gset:cn{@anim@ocmap}{}
+    \AtBeginShipout{\tl_gset:cn{@anim@ocmap}{}}
   }
-  \cs_new:Nn\mix_pdfemc:{\pdfliteral{EMC}}
+  \cs_new:Nn\mix_pdfemc:{\pdfliteral~direct~{EMC}}
 }{
+  %pgf + transparency related settings
+  \bool_new:N\g_mix_pgfloaded_bool
+  \bool_gset_false:N\g_mix_pgfloaded_bool
+  \AtBeginDocument{
+    \@ifpackageloaded{pgf}{\bool_gset_true:N\g_mix_pgfloaded_bool}{}
+  }
   \int_new:N\g_mix_obj_int % object ID
   \bool_if:NTF\g_mix_dvipdfmx_bool{ %dvipdfmx/XeTeX
     \cs_new:Nn\mix_pdfobj:nnn{
@@ -655,6 +686,21 @@
         depth\space\dim_eval:n{\box_dp:N #1}
       }
       \begin{picture}(0,0)\put(0,0){\box_use:N #1}\end{picture}
+      \bool_if:NT\g_mix_pgfloaded_bool{ % transparency et al. for PGF
+        \tl_set:Nn\l_mix_temp_tl{}
+        \ifpgf@sys@pdf@extgs@exists
+          \tl_set:Nn\l_mix_temp_tl{/ExtGState~@pgfextgs}
+        \fi
+        \ifpgf@sys@pdf@patterns@exists
+          \tl_put_right:Nn\l_mix_temp_tl{/Pattern~@pgfpatterns}
+        \fi
+        \ifpgf@sys@pdf@colorspaces@exists
+          \tl_put_right:Nn\l_mix_temp_tl{/ColorSpace~@pgfcolorspaces}
+        \fi
+        \tl_if_blank:VF\l_mix_temp_tl{
+          \special{pdf:put~@resources~<<\l_mix_temp_tl>>}
+        }
+      }
       \special{pdf:exobj}
       \tl_gset:Nx\g_mix_pdflastxform_tl{@mix@obj\int_use:N\g_mix_obj_int}
       \int_gincr:N\g_mix_obj_int
@@ -683,14 +729,16 @@
     }
 
     \cs_new:Nn\mix_pdfcatalog:n{\special{pdf:put~@catalog~<<#1>>}}
-    \cs_new:Nn\mix_pdfresources:{\special{pdf:put~@resources~<<
-      /Properties<</OC@rm@play@\int_use:N\g_mix_rmcnt_int\space
-      \g_mix_btnocg_tl>>
-    >>}}
-    \cs_new:Nn\mix_pdfbdc:{
-      \special{pdf:~content~/OC/OC@rm@play@\int_use:N\g_mix_rmcnt_int\space BDC}
+
+    %marked content BDC/EMC operators
+    \int_new:N\g_mix_oc_int % object ID
+    \cs_new:Nn\mix_pdfbdc:nn{
+      \special{pdf:code~#1/rm@oc\int_use:N\g_mix_oc_int\space BDC}
+      \special{pdf:put~@resources~<<
+        /Properties~<</rm@oc\int_use:N\g_mix_oc_int\space#2>>>>}
+      \int_gincr:N\g_mix_oc_int
     }
-    \cs_new:Nn\mix_pdfemc:{\special{pdf:~content~EMC}}
+    \cs_new:Nn\mix_pdfemc:{\special{pdf:~code~EMC}}
   }{
     % dvips
     \bool_new:N\g_mix_powerdot_bool %to cope with some powerdot oddity
@@ -727,7 +775,7 @@
 
     %determine DVI resolution and output warning message if too big
     %\AtBeginDocument{\special{ps:\g_mix_dpiwarning_tl}}
-    \special{ps:\g_mix_dpiwarning_tl}
+    \AtEndDvi{\special{ps:\g_mix_dpiwarning_tl}}
 
     \cs_new:Nn\mix_pdfobj:nnn{
       % #1:objref; if empty, a new object number will be reserved
@@ -965,8 +1013,9 @@
       \special{ps:~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
     }
 
-    \cs_new:Nn\mix_pdfresources:{} %no-op, Distiller does it automatically
-    \cs_new:Nn\mix_pdfbdc:{\special{ps:~mark~/OC~\g_mix_btnocg_tl~/BDC~pdfmark}}
+    %marked content BDC/EMC operators for playbutton ocg;
+    %require Ghostscript v. >= 9.15
+    \cs_new:Nn\mix_pdfbdc:nn{\special{ps:~mark~#1~#2~/BDC~pdfmark}}
     \cs_new:Nn\mix_pdfemc:{\special{ps:~mark~/EMC~pdfmark}}
   }
 }
@@ -1067,10 +1116,18 @@
       %create FileSpec for current file name if not yet existent
       \cs_if_exist:cF{fileSpec_#1}{
         \mix_pdfobj:nnn{}{dict}{
-          /Type/Filespec/F~(#1)/UF~(#1)
+          /Type/Filespec/F~(#1)%/UF~(#1)
           /EF~<</F~\tl_use:c{fileEmb_\mix_filemdfivesum:n{\l_mix_file_tl}}>>
         }
         \tl_gset:cx{fileSpec_#1}{\g_mix_pdflastobj_tl}
+        \bool_if:NT\g_mix_usrattach_bool{
+          \mix_pdfannot:nnnn{0pt}{0pt}{0pt}{
+            /Contents~(media~resource)
+            /F~2
+            /Subtype/FileAttachment
+            /FS~\g_mix_pdflastobj_tl
+          }
+        }
       }
       %add FileSpec to assets tree of current annot
       \cs_if_exist:cF{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}{
@@ -1084,16 +1141,16 @@
 
 \cs_new:Nn\mix_draftbox:n{ %#1 text string to be shown in the draft box centre
   \hbox_overlap_right:n{
-    \hbox_to_wd:nn{\l_mix_wd_tl}{
-      \vrule~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
+    \hbox_to_wd:nn{\g_mix_wd_tl}{
+      \vrule~height~\g_mix_ht_tl~depth~\g_mix_dp_tl\hss
       \vrule
     }
   }
-  \box_move_down:nn{\l_mix_dp_tl}{
-    \hbox_to_wd:nn{\l_mix_wd_tl}{
-      \vbox_to_ht:nn{\l_mix_tt_tl}{
-        \hrule~width~\l_mix_wd_tl\vss
-        \hbox_to_wd:nn{\l_mix_wd_tl}{\ttfamily{\tiny#1}\hss}\vss
+  \box_move_down:nn{\g_mix_dp_tl}{
+    \hbox_to_wd:nn{\g_mix_wd_tl}{
+      \vbox_to_ht:nn{\g_mix_tt_tl}{
+        \hrule~width~\g_mix_wd_tl\vss
+        \hbox_to_wd:nn{\g_mix_wd_tl}{\ttfamily{\tiny#1}\hss}\vss
         \hrule
       }
     }
@@ -1108,102 +1165,123 @@
   and~`height'~options.
 }
 
+\msg_set:nnn{media9}{zero~width}{
+  Media~annotation~\msg_line_context:\ has~zero~width.\\\\
+  Provide~a~poster~text~with~non-zero~width~or\\
+  set~a~valid~one~using~the~`width'~option.
+}
+
+\msg_set:nnn{media9}{zero~height}{
+  Media~annotation~\msg_line_context:\ has~zero~height.\\\\
+  Provide~a~poster~text~with~non-zero~height~or\\
+  set~a~valid~height~using~one~of~`height'~or\\
+  `totalheight'~options.
+}
+
 
 %calculates widget dimensions from natural ones, taking resizing options
 %into account
 \int_new:N\g_mix_resizeflag_int% resizing flags according to options given
 \cs_new:Nn\mix_scale:n{% #1 box number
-  %natural dimensions \width, \height, \depth, \totalheight
-  \tl_set:Nn\width {\box_wd:N#1}
-  \tl_set:Nn\height{\box_ht:N#1}
-  \tl_set:Nn\depth {\box_dp:N#1}
-  \tl_set:Nn\totalheight{(\height+\depth)}
-  \tl_set:Nx\l_mix_wd_tl{\dim_eval:n{\g_mix_wdarg_tl}}
-  \tl_set:Nx\l_mix_ht_tl{\dim_eval:n{\g_mix_htarg_tl}}
-  \tl_set:Nx\l_mix_dp_tl{\dim_eval:n{\g_mix_dparg_tl}}
-  \tl_set:Nx\l_mix_tt_tl{\dim_eval:n{\g_mix_htarg_tl+\g_mix_dparg_tl}}
-  %resize unspecified dimensions to keep aspect ratio
+  %totalheight overrides height if both height & totalheight options were given
+  \bool_if:nT{
+    \int_compare_p:n{\g_mix_resizeflag_int=\c_three} ||
+    \int_compare_p:n{\g_mix_resizeflag_int=\c_seven}
+  }{\int_gsub:Nn\g_mix_resizeflag_int{\c_two}}
+  \group_begin:
+    %natural dimensions \width, \height, \depth, \totalheight
+    \tl_set:Nn\width {\box_wd:N#1}
+    \tl_set:Nn\height{\box_ht:N#1}
+    \tl_set:Nn\depth {\box_dp:N#1}
+    \tl_set:Nn\totalheight{\dimexpr\height+\depth\relax}
+    \tl_gset:Nx\g_tmpa_tl{\dim_eval:n{\width}}
+    \tl_gset:Nx\g_tmpb_tl{\dim_eval:n{\totalheight}}
+    %evaluate width/height/totalheight options
+    \tl_gset:Nx\g_mix_wd_tl{\dim_abs:n{\g_mix_wdarg_tl}}
+    \tl_gset:Nx\g_mix_ht_tl{\dim_abs:n{\g_mix_htarg_tl}}
+    \tl_gset:Nx\g_mix_tt_tl{\dim_abs:n{\g_mix_ttarg_tl}}
+    \dim_compare:nT{\width=\c_zero_dim}{\box_set_wd:Nn#1{\g_mix_wd_tl}}
+    \dim_compare:nT{\totalheight=\c_zero_dim}{
+      \bool_if:nT{ %height option given
+        \int_compare_p:n{\g_mix_resizeflag_int=\c_six}||
+        \int_compare_p:n{\g_mix_resizeflag_int=\c_two}
+      }{\box_set_ht:Nn#1{\g_mix_ht_tl}}
+      \bool_if:nT{ %totalheight option given
+        \int_compare_p:n{\g_mix_resizeflag_int=\c_five}||
+        \int_compare_p:n{\g_mix_resizeflag_int=\c_one}
+      }{\box_set_ht:Nn#1{\g_mix_tt_tl}}
+    }
+  \group_end:
+  \tl_gset:Nn\g_mix_dp_tl{\c_zero_dim} %to be initialised here
+  %now resize (originally non-zero size) poster box according to the
+  %options given
   \bool_if:nF{
-    % original poster box must be two dimensional
-    \dim_compare_p:n{\width=\c_zero_dim}
-    ||\dim_compare_p:n{\totalheight=\c_zero_dim}
+    \dim_compare_p:n{\g_tmpa_tl=\c_zero_dim}||
+    \dim_compare_p:n{\g_tmpb_tl=\c_zero_dim}
   }{
-    \int_case:nnn{\g_mix_resizeflag_int}{
-      {\c_one}{% depth given alone: no rescaling, only vertical movement
-        \tl_set:Nx\l_mix_ht_tl{
-          \dim_eval:n{
-            \totalheight-\l_mix_dp_tl
+    %bit 2^2=width, 2^1=height, 2^0=totalhight given
+    \int_case:nn{\g_mix_resizeflag_int}{
+      {\c_one}{
+        %\hbox_set:Nn#1{\resizebox*{!}{\g_mix_tt_tl}{\box_use_clear:N#1}}
+        \box_resize_to_ht_plus_dp:Nn#1{\g_mix_tt_tl}
+      }
+      {\c_two}{
+        \hbox_set:Nn#1{\resizebox{!}{\g_mix_ht_tl}{\box_use_clear:N#1}}
+      }
+      {\c_four}{
+        %\hbox_set:Nn#1{\resizebox{\g_mix_wd_tl}{!}{\box_use_clear:N#1}}
+        \box_resize_to_wd:Nn#1{\g_mix_wd_tl}
+      }
+      {\c_five}{
+        \bool_if:NTF\g_mix_usriso_bool{
+          \dim_set:Nn\l_tmpa_dim{
+            (\box_ht:N#1+\box_dp:N#1)*\dim_ratio:nn{\g_mix_wd_tl}{\box_wd:N#1}
           }
+          \dim_set:Nn\l_tmpa_dim{\dim_abs:n{\l_tmpa_dim}}
+          \dim_set:Nn\l_tmpb_dim{\dim_abs:n{\g_mix_tt_tl}}
+          \dim_compare:nTF{\l_tmpa_dim<\l_tmpb_dim}{
+            %\hbox_set:Nn#1{\resizebox{\g_mix_wd_tl}{!}{\box_use_clear:N#1}}
+            \box_resize_to_wd:Nn#1{\g_mix_wd_tl}
+          }{
+            %\hbox_set:Nn#1{\resizebox*{!}{\g_mix_tt_tl}{\box_use_clear:N#1}}
+            \box_resize_to_ht_plus_dp:Nn#1{\g_mix_tt_tl}
+          }
+        }{
+          %\hbox_set:Nn#1{
+          %  \resizebox*{\g_mix_wd_tl}{\g_mix_tt_tl}{\box_use_clear:N#1}}
+          \box_resize:Nnn#1{\g_mix_wd_tl}{\g_mix_tt_tl}  
         }
       }
-      {\c_two}{% height given alone
-        \tl_set:Nx\l_mix_wd_tl{
-          \dim_eval:n{
-            \width*\dim_ratio:nn{\l_mix_ht_tl}{\height}
+      {\c_six}{
+        \bool_if:NTF\g_mix_usriso_bool{
+          \dim_set:Nn\l_tmpa_dim{
+            \box_ht:N#1*\dim_ratio:nn{\g_mix_wd_tl}{\box_wd:N#1}
           }
-        }
-        \tl_set:Nx\l_mix_dp_tl{
-          \dim_eval:n{
-            \depth*\dim_ratio:nn{\l_mix_ht_tl}{\height}
+          \dim_set:Nn\l_tmpa_dim{\dim_abs:n{\l_tmpa_dim}}
+          \dim_set:Nn\l_tmpb_dim{\dim_abs:n{\g_mix_ht_tl}}
+          \dim_compare:nTF{\l_tmpa_dim<\l_tmpb_dim}{
+            %\hbox_set:Nn#1{\resizebox{\g_mix_wd_tl}{!}{\box_use_clear:N#1}}
+            \box_resize_to_wd:Nn#1{\g_mix_wd_tl}
+          }{
+            \hbox_set:Nn#1{\resizebox{!}{\g_mix_ht_tl}{\box_use_clear:N#1}}
           }
-        }
-      }
-      {\c_three}{% height and depth given
-        \tl_set:Nx\l_mix_wd_tl{
-          \dim_eval:n{
-            \width*\dim_ratio:nn{\l_mix_tt_tl}{\totalheight}
-          }
-        }
-      }
-      {\c_four}{% width given alone
-        \tl_set:Nx\l_mix_ht_tl{
-          \dim_eval:n{
-            \height*\dim_ratio:nn{\l_mix_wd_tl}{\width}
-          }
-        }
-        \tl_set:Nx\l_mix_dp_tl{
-          \dim_eval:n{
-            \depth*\dim_ratio:nn{\l_mix_wd_tl}{\width}
-          }
+        }{
+          \hbox_set:Nn#1{
+            \resizebox{\g_mix_wd_tl}{\g_mix_ht_tl}{\box_use_clear:N#1}}
         }
       }
-      {\c_five}{% width and depth given
-        \tl_set:Nx\l_mix_ht_tl{
-          \dim_eval:n{
-            \totalheight*\dim_ratio:nn{\l_mix_wd_tl}{\width}-\l_mix_dp_tl
-          }
-        }
-      }
-      {\c_six}{% width and height given
-        \tl_set:Nx\l_mix_dp_tl{
-          \dim_eval:n{
-            \depth*\dim_ratio:nn{\l_mix_ht_tl}{\height}
-          }
-        }
-      }
-    }{} % 0, 7
+    }
   }
   %apply scaling factor
-  \dim_set:Nn\l_tmpa_dim{\l_mix_wd_tl}
-  \tl_set:Nx\l_mix_wd_tl{\dim_eval:n{\g_mix_scalearg_tl\l_tmpa_dim}}
-  \dim_set:Nn\l_tmpa_dim{\l_mix_ht_tl}
-  \tl_set:Nx\l_mix_ht_tl{\dim_eval:n{\g_mix_scalearg_tl\l_tmpa_dim}}
-  \dim_set:Nn\l_tmpa_dim{\l_mix_dp_tl}
-  \tl_set:Nx\l_mix_dp_tl{\dim_eval:n{\g_mix_scalearg_tl\l_tmpa_dim}}
-  \tl_set:Nx\l_mix_tt_tl{\dim_eval:n{\l_mix_ht_tl+\l_mix_dp_tl}}
-  %apply new dimensions (to non-zero size box)
-  \bool_if:nF{
-    \dim_compare_p:n{\width=\c_zero_dim} ||
-    \dim_compare_p:n{\totalheight=\c_zero_dim}
-  }{
-    \box_resize:Nnn#1{\l_mix_wd_tl}{\l_mix_tt_tl}
-  }
-  \bool_if:nT{
-    \dim_compare_p:n{\l_mix_wd_tl=\c_zero_dim} ||
-    \dim_compare_p:n{\l_mix_tt_tl=\c_zero_dim}
-  }{
-    \msg_warning:nn{media9}{zero~size}
-  }
+  \box_scale:Nnn#1{\g_mix_scalearg_tl}{\g_mix_scalearg_tl}
+  %dimensions after resizing
+  \tl_gset:Nx\g_mix_wd_tl{\dim_eval:n{\box_wd:N#1}}
+  \tl_gset:Nx\g_mix_ht_tl{\dim_eval:n{\box_ht:N#1}}
+  \tl_gset:Nx\g_mix_dp_tl{\dim_eval:n{\box_dp:N#1}}
+  \tl_gset:Nx\g_mix_tt_tl{\dim_eval:n{\box_ht:N#1+\box_dp:N#1}}
+  \dim_compare:nT{\g_mix_wd_tl=\c_zero_dim}{\msg_warning:nn{media9}{zero~width}}
+  \dim_compare:nT{\g_mix_tt_tl=\c_zero_dim}{
+      \msg_warning:nn{media9}{zero~height}}
 }
 
 \bool_new:N\g_mix_iiid_bool
@@ -1214,29 +1292,26 @@
 %play button overlay; two versions: fancy and plain
 \box_new:N\l_mix_pbtn_box
 \ExplSyntaxOff
+\newdimen\mix@btn@dim
 \def\g@mix@pbtn@fancy@tl#1#2{% width, total height
-  \ifdim#2<\dimexpr\baselineskip*3\relax%
-     \edef\mix@tikzunit{#2}%
-  \else%
-     \edef\mix@tikzunit{\the\dimexpr\baselineskip*3\relax}%
-  \fi%
-  \tikz[x=\mix@tikzunit,y=\mix@tikzunit,transparency group]{%
+  \mix@btn@dim=\dimexpr\baselineskip*3\relax%
+  \ifdim#1<\mix@btn@dim\mix@btn@dim=#1\fi%
+  \ifdim#2<\mix@btn@dim\mix@btn@dim=#2\fi%
+  \tikz[x=\mix@btn@dim,y=\mix@btn@dim,transparency group]{%
     \shade [opacity=\ifdim#2>\dimexpr\baselineskip*6\relax0.6\else0\fi,
       shading angle=-180,even odd rule]
       (-\dimexpr#1/2\relax,-0.5) rectangle (\dimexpr#1/2\relax,0.5)
       (0,0) circle (0.4);
     \shade [ball color=gray,opacity=0.6] (0,0) circle (0.4);
-    \fill [color=white,opacity=0.6]
+    \fill [color=white,opacity=0.6] %triangle
       (-0.152,0.224)--(-0.152,-0.224)--+(30:0.4844)--cycle;
   }%
 }
 \def\g@mix@pbtn@plain@tl#1#2{% width, total height
-  \ifdim#2<\dimexpr\baselineskip*3\relax%
-     \edef\mix@tikzunit{#2}%
-  \else%
-     \edef\mix@tikzunit{\the\dimexpr\baselineskip*3\relax}%
-  \fi%
-  \tikz[x=\mix@tikzunit,y=\mix@tikzunit,transparency group]{%
+  \mix@btn@dim=\dimexpr\baselineskip*3\relax%
+  \ifdim#1<\mix@btn@dim\mix@btn@dim=#1\fi%
+  \ifdim#2<\mix@btn@dim\mix@btn@dim=#2\fi%
+  \tikz[x=\mix@btn@dim,y=\mix@btn@dim,transparency group]{%
     \fill [opacity=\ifdim#2>\dimexpr\baselineskip*6\relax0.5\else0\fi,
       color=gray,even odd rule]
       (-\dimexpr#1/2\relax,-0.5) rectangle (\dimexpr#1/2\relax,0.5);
@@ -1252,15 +1327,13 @@
 \NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
   \group_begin:
   \leavevmode
-  \mix_reset:
   %empty stream as appearance dummy
   \cs_if_exist:NF\g_mix_appearance_tl{
     \hbox_set:Nn\l_mix_poster_box{\phantom{\rule{1pt}{1pt}}}
     \mix_pdfxform:n{\l_mix_poster_box}
     \tl_gset:Nx\g_mix_appearance_tl{\g_mix_pdflastxform_tl}
   }
-  \cs_if_exist:NT\Ginput@path{\cs_set_eq:NN\input@path\Ginput@path}
-  \hbox_set:Nn\l_mix_poster_box{#2}
+  \mix_reset:
   \mix_uribegin: %treat URI characters correctly
   \keys_set:nn{media9/user}{#1}
   \mix_uriend:
@@ -1269,12 +1342,16 @@
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{~=}{=}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{=~}{=}
   \tl_gtrim_spaces:N\g_mix_flashvars_tl
+  %
+  \cs_if_exist:NT\Ginput@path{\cs_set_eq:NN\input@path\Ginput@path}
+  %
+  \hbox_set:Nn\l_mix_poster_box{\group_begin:#2\group_end:}
+  %\hbox_set:Nn\l_mix_poster_box{#2}
   \mix_scale:n{\l_mix_poster_box}
   \bool_if:nT{
-    \dim_compare_p:n{\l_mix_tt_tl=\c_zero_dim}||
-    \dim_compare_p:n{\l_mix_wd_tl=\c_zero_dim}
+    \dim_compare_p:n{\g_mix_tt_tl=\c_zero_dim}||
+    \dim_compare_p:n{\g_mix_wd_tl=\c_zero_dim}
   }{
-    %\bool_gset_false:N\g_mix_usrpbtn_bool
     \tl_gset:Nn\g_mix_usrpbtn_tl{none}
   }
   \bool_if:NTF\g_mix_usrdraft_bool{
@@ -1284,8 +1361,9 @@
     \tl_if_blank:oTF{#2}{
       \mix_draftbox:n{\tl_to_str:n{#3}}
     }{
-      \box_move_down:nn{\l_mix_dp_tl-\box_dp:N\l_mix_poster_box}{
-        \box_use:N\l_mix_poster_box
+      \hbox_to_wd:nn{\g_mix_wd_tl}{
+        \vrule~width~\c_zero_dim~height~\g_mix_ht_tl~depth~\g_mix_dp_tl
+        \box_use:N\l_mix_poster_box\hss
       }
     }
   }{
@@ -1300,10 +1378,10 @@
         }
       }
       \mix_pdfobj:nnn{}{dict}{
-        /Type/Filespec/F~(btnoff)/UF~(btnoff)/EF~<</F~\g_mix_pdflastobj_tl>>
+        /Type/Filespec/EF~<</F~\g_mix_pdflastobj_tl>>/F~(btnoff)%/UF~(btnoff)
       }
       \tl_gset:Nx\g_mix_assets_tl{(btnoff)~\g_mix_pdflastobj_tl}
-      \tl_set:Nx\l_mix_scripts_tl{\g_mix_pdflastobj_tl}
+      \tl_set:Nx\l_mix_scripts_tl{~\g_mix_pdflastobj_tl~}
       %enforce plain playbutton overlay for XeTeX
       \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
     }
@@ -1483,7 +1561,7 @@
       \tl_gset_eq:NN\g_mix_label_tl\g_mix_usrlabel_tl
     }
     % #1:width, #2:height, #3:depth, #4:content (key-value)
-    \mix_pdfannot:nnnn{\l_mix_wd_tl}{\l_mix_ht_tl}{\l_mix_dp_tl}{
+    \mix_pdfannot:nnnn{\g_mix_wd_tl}{\g_mix_ht_tl}{\g_mix_dp_tl}{
       /Subtype/RichMedia
       /F~4
       /BS~<</W~0/S/S>>
@@ -1537,26 +1615,20 @@
       /AA~<</PO~\g_mix_pdflastobj_tl~/PV~\g_mix_pdflastobj_tl>>
     }
     \tl_gput_right:Nx\@anim@fields{\space\g_mix_pdflastann_tl\space}
-    \mix_insert_acroform:
-    \hbox_overlap_right:n{
-      \box_move_down:nn{\l_mix_dp_tl-\box_dp:N\l_mix_poster_box}{
-        \box_use:N\l_mix_poster_box
-      }
-    }
+    \hbox_overlap_right:n{\box_use:N\l_mix_poster_box}
     \str_if_eq_x:nnTF{\g_mix_usrpbtn_tl}{none}{
-      \hbox_to_wd:nn{\l_mix_wd_tl}{
-        \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
+      \hbox_to_wd:nn{\g_mix_wd_tl}{
+        \vrule~width~\c_zero_dim~height~\g_mix_ht_tl~depth~\g_mix_dp_tl\hss
       }
     }{%insert play button overlay
       \mix_insert_btnocg: %create OCG
-      \mix_insert_ocprops:
       \cs_gset_eq:Nc\mix_pbtn:NN{g@mix@pbtn@\g_mix_usrpbtn_tl @tl}
-      \hbox_set:Nn\l_mix_pbtn_box{\mix_pbtn:NN\l_mix_wd_tl\l_mix_tt_tl}
-      \box_move_down:nn{\l_mix_dp_tl}{
-        \hbox_to_wd:nn{\l_mix_wd_tl}{
-          \vbox_to_ht:nn{\l_mix_tt_tl}{
+      \hbox_set:Nn\l_mix_pbtn_box{\mix_pbtn:NN\g_mix_wd_tl\g_mix_tt_tl}
+      \box_move_down:nn{\g_mix_dp_tl}{
+        \hbox_to_wd:nn{\g_mix_wd_tl}{
+          \vbox_to_ht:nn{\g_mix_tt_tl}{
             \vss
-            \mix_pdfbdc:
+            \mix_pdfbdc:nn{/OC}{\g_mix_btnocg_tl}
             \box_use:N\l_mix_pbtn_box
             \mix_pdfemc:
           }
@@ -1738,6 +1810,8 @@
 }
 
 \bool_new:N\g_mix_usrdraft_bool
+\bool_new:N\g_mix_usriso_bool
+\bool_new:N\g_mix_usrattach_bool
 \bool_new:N\g_mix_usrpbtn_bool
 \bool_new:N\g_mix_opt_iiidview_bool
 \bool_new:N\l_mix_roo_bool
@@ -1780,11 +1854,28 @@
   },
   height .value_required:,
 
-  depth .code:n = {
-    \tl_gset:Nn\g_mix_dparg_tl{#1}
+  totalheight .code:n = {
+    \tl_gset:Nn\g_mix_ttarg_tl{#1}
     \int_gadd:Nn\g_mix_resizeflag_int{\c_one}
   },
-  depth .value_required:,
+  height .value_required:,
+
+%  depth .code:n = {
+%    \tl_gset:Nn\g_mix_dparg_tl{#1}
+%    \int_gadd:Nn\g_mix_resizeflag_int{\c_one}
+%  },
+%  depth .value_required:,
+
+  depth .code:n = {
+    \msg_warning:nnnn{media9}{deprecated~option}{depth}{
+      Ignoring~`depth'~option.
+    }
+  },
+
+  keepaspectratio .choice:,
+  keepaspectratio / true .code:n = {\bool_gset_true:N\g_mix_usriso_bool},
+  keepaspectratio / false .code:n = {\bool_gset_false:N\g_mix_usriso_bool},
+  keepaspectratio .default:n = {true},
 
   scale .code:n = {\tl_gset:Nx\g_mix_scalearg_tl{#1}},
   scale .value_required:,
@@ -1825,6 +1916,11 @@
   final / true .code:n = {\bool_gset_false:N\g_mix_usrdraft_bool},
   final / false .code:n = {\bool_gset_true:N\g_mix_usrdraft_bool},
   final .default:n = {true},
+
+  attachfiles .choice:,
+  attachfiles / true .code:n = {\bool_gset_true:N\g_mix_usrattach_bool},
+  attachfiles / false .code:n = {\bool_gset_false:N\g_mix_usrattach_bool},
+  attachfiles .default:n = {true},
 
   noplaybutton .choice:,
   noplaybutton / true .code:n = {\tl_gset:Nn\g_mix_usrpbtn_tl{none}},
@@ -2664,7 +2760,6 @@
       >>
     }
     \tl_gput_right:Nx\@anim@fields{\g_mix_pdflastann_tl\space}
-    \mix_insert_acroform:
     \hbox_to_wd:nn{\width}{
       \vrule~width~\c_zero_dim~height~\height~depth~\depth\hss
     }
@@ -2672,4 +2767,4 @@
   }
   \group_end:
 }
-\bool_if:NF\g_mix_pdfoutput_bool{\mix_insert_ocprops:\mix_insert_acroform:}
+\mix_insert_ocprops:\mix_insert_acroform:
