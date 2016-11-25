@@ -42,8 +42,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2014/03/06}
-\def\g@mix@version@tl{0.41}
+\def\g@mix@date@tl{2014/03/18}
+\def\g@mix@version@tl{0.42}
 
 \def\g@mix@liiikerneldate{2013/07/28}
 \def\g@mix@liiipkgdate{2013/07/28}
@@ -121,8 +121,7 @@
 \tl_gclear:N\g_mix_pkgopt_ls_tl
 \tl_gclear:N\g_mix_pkgopt_rm_tl
 \bool_new:N\g_mix_pkgiiidcalc_bool
-\bool_new:N\g_mix_pkgpbtn_bool
-\bool_gset_true:N\g_mix_pkgpbtn_bool
+\tl_gset:Nn\g_mix_pkgpbtn_tl{fancy}
 
 %floating window settings
 \group_begin:
@@ -169,9 +168,14 @@
   final .default:n = {true},
 
   noplaybutton .choice:,
-  noplaybutton / true .code:n = {\bool_gset_false:N\g_mix_pkgpbtn_bool},
-  noplaybutton / false .code:n = {\bool_gset_true:N\g_mix_pkgpbtn_bool},
+  noplaybutton / true .code:n = {\tl_gset:Nn\g_mix_pkgpbtn_tl{none}},
   noplaybutton .default:n = {true},
+
+  playbutton .choice:,
+  playbutton / fancy .code:n = {\tl_gset:Nn\g_mix_pkgpbtn_tl{fancy}},
+  playbutton / plain .code:n = {\tl_gset:Nn\g_mix_pkgpbtn_tl{plain}},
+  playbutton / none .code:n = {\tl_gset:Nn\g_mix_pkgpbtn_tl{none}},
+  playbutton .default:n = {fancy},
 
   activate .choice:,
   activate / pagevisible .code:n = {\tl_gset:Nn\g_mix_pkgact_tl{/PV}},
@@ -366,7 +370,7 @@
   \box_clear:N\l_mix_poster_box
   \tl_clear:N\l_mix_scripts_tl
   \bool_gset_eq:NN\g_mix_usrdraft_bool\g_mix_pkgdraft_bool
-  \bool_gset_eq:NN\g_mix_usrpbtn_bool\g_mix_pkgpbtn_bool
+  \tl_gset_eq:NN\g_mix_usrpbtn_tl\g_mix_pkgpbtn_tl
   \seq_gclear:N\g_mix_res_seq
   \seq_gclear:N\g_mix_script_seq
   \int_gzero:N\g_mix_resizeflag_int
@@ -507,16 +511,14 @@
   }
 }
 \cs_new:Nn\mix_insert_btnocg:{%OCG for play button overlay
-  \tl_if_exist:NF\g_mix_btnocg_tl{
-    \mix_pdfobj:nnn{}{dict}{
-      /Type/OCG/Name~(MediaPlayButton)
-      /Usage<</Print<</PrintState/OFF>>/Export<</ExportState/OFF>>>>
-    }
-    \tl_gput_right:Nx\@anim@ocgs{\space\g_mix_pdflastobj_tl}
-    \tl_gput_right:Nx\@anim@offocgs{\space\g_mix_pdflastobj_tl}
-    \tl_gset:Nx\g_mix_btnocg_tl{\g_mix_pdflastobj_tl}
+  \mix_pdfobj:nnn{}{dict}{
+    /Type/OCG/Name~(MediaPlayButton\int_use:N\g_mix_rmcnt_int)
+    /Usage<</Print<</PrintState/OFF>>/Export<</ExportState/OFF>>>>
   }
-  \mix_pdfresources:n{/Properties<</OC@rm@play\space\g_mix_btnocg_tl>>}
+  \tl_gput_right:Nx\@anim@ocgs{\space\g_mix_pdflastobj_tl}
+  \tl_gput_right:Nx\@anim@offocgs{\space\g_mix_pdflastobj_tl}
+  \tl_gset:Nx\g_mix_btnocg_tl{\g_mix_pdflastobj_tl}
+  \mix_pdfresources:
 }
 
 %commands for creating PDF objects, annots etc.
@@ -583,13 +585,18 @@
   }
 
   \cs_new:Nn\mix_pdfcatalog:n{\pdfcatalog{#1}}
-  \cs_new:Nn\mix_pdfresources:n{
+  \cs_new:Nn\mix_pdfresources:{
     \group_begin:
     \tl_set:Nx\l_mix_temp_tl{\group_end:
-      \global\pdfpageresources{\the\pdfpageresources #1}
+      \global\pdfpageresources{\the\pdfpageresources
+        /Properties<</OC@rm@play@\int_use:N\g_mix_rmcnt_int\space
+        \g_mix_btnocg_tl>>
+      }
     }\l_mix_temp_tl
   }
-  \cs_new:Nn\mix_pdfbdc:{\pdfliteral{/OC/OC@rm@play~BDC}}
+  \cs_new:Nn\mix_pdfbdc:{
+    \pdfliteral{/OC/OC@rm@play@\int_use:N\g_mix_rmcnt_int\space BDC}
+  }
   \cs_new:Nn\mix_pdfemc:{\pdfliteral{EMC}}
 }{
   \int_new:N\g_mix_obj_int % object ID
@@ -673,8 +680,13 @@
     }
 
     \cs_new:Nn\mix_pdfcatalog:n{\special{pdf:put~@catalog~<<#1>>}}
-    \cs_new:Nn\mix_pdfresources:n{\special{pdf:put~@resources~<<#1>>}}
-    \cs_new:Nn\mix_pdfbdc:{\special{pdf:~content~/OC/OC@rm@play~BDC}}
+    \cs_new:Nn\mix_pdfresources:{\special{pdf:put~@resources~<<
+      /Properties<</OC@rm@play@\int_use:N\g_mix_rmcnt_int\space
+      \g_mix_btnocg_tl>>
+    >>}}
+    \cs_new:Nn\mix_pdfbdc:{
+      \special{pdf:~content~/OC/OC@rm@play@\int_use:N\g_mix_rmcnt_int\space BDC}
+    }
     \cs_new:Nn\mix_pdfemc:{\special{pdf:~content~EMC}}
   }{
     % dvips
@@ -950,7 +962,7 @@
       \special{ps:~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
     }
 
-    \cs_new:Nn\mix_pdfresources:n{} %no-op
+    \cs_new:Nn\mix_pdfresources:{} %no-op, Distiller does it automatically
     \cs_new:Nn\mix_pdfbdc:{\special{ps:~mark~/OC~\g_mix_btnocg_tl~/BDC~pdfmark}}
     \cs_new:Nn\mix_pdfemc:{\special{ps:~mark~/EMC~pdfmark}}
   }
@@ -1206,19 +1218,42 @@
 
 \NewDocumentCommand\addmediapath{m}{\file_path_include:n{#1/}}
 
-%play button overlay
+%play button overlay; two versions: fancy and plain
 \box_new:N\l_mix_pbtn_box
 \ExplSyntaxOff
-\def\g@mix@pbtn@tl{%
-  \tikz[opacity=.7,transparency group]{%
-    \useasboundingbox (-5,-5) rectangle (5,5);
-    \fill [color=gray,even odd rule] (0,0) circle (2.5)
-       (-0.95,1.4)--(-0.95,-1.4)--+(30:2.8)--cycle;
-    \fill [color=white] (-0.95,1.4)--(-0.95,-1.4)--+(30:2.8)--cycle;
+\def\g@mix@pbtn@fancy@tl#1#2{% width, total height
+  \ifdim#2<\dimexpr\baselineskip*3\relax%
+     \edef\mix@tikzunit{#2}%
+  \else%
+     \edef\mix@tikzunit{\the\dimexpr\baselineskip*3\relax}%
+  \fi%
+  \tikz[x=\mix@tikzunit,y=\mix@tikzunit,transparency group]{%
+    \shade [opacity=\ifdim#2>\dimexpr\baselineskip*6\relax0.6\else0\fi,
+      shading angle=-180,even odd rule]
+      (-\dimexpr#1/2\relax,-0.5) rectangle (\dimexpr#1/2\relax,0.5)
+      (0,0) circle (0.4);
+    \shade [ball color=gray,opacity=0.6] (0,0) circle (0.4);
+    \fill [color=white,opacity=0.6]
+      (-0.152,0.224)--(-0.152,-0.224)--+(30:0.4844)--cycle;
+  }%
+}
+\def\g@mix@pbtn@plain@tl#1#2{% width, total height
+  \ifdim#2<\dimexpr\baselineskip*3\relax%
+     \edef\mix@tikzunit{#2}%
+  \else%
+     \edef\mix@tikzunit{\the\dimexpr\baselineskip*3\relax}%
+  \fi%
+  \tikz[x=\mix@tikzunit,y=\mix@tikzunit,transparency group]{%
+    \fill [opacity=\ifdim#2>\dimexpr\baselineskip*6\relax0.5\else0\fi,
+      color=gray,even odd rule]
+      (-\dimexpr#1/2\relax,-0.5) rectangle (\dimexpr#1/2\relax,0.5);
+      (0,0) circle (0.4);
+    \fill [color=black,opacity=0.5] (0,0) circle (0.4);
+    \fill [color=white,opacity=0.8]
+      (-0.152,0.224)--(-0.152,-0.224)--+(30:0.4844)--cycle;
   }%
 }
 \ExplSyntaxOn
-\tl_set_eq:NN\g_mix_pbtn_tl\g@mix@pbtn@tl
 
 \ior_new:N\l_mix_vfile_stream %file stream for 3D views files
 \NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
@@ -1246,8 +1281,21 @@
     \dim_compare_p:n{\l_mix_tt_tl=\c_zero_dim}||
     \dim_compare_p:n{\l_mix_wd_tl=\c_zero_dim}
   }{
-    \bool_gset_false:N\g_mix_usrpbtn_bool
+    %\bool_gset_false:N\g_mix_usrpbtn_bool
+    \tl_gset:Nn\g_mix_usrpbtn_tl{none}
   }
+  %enforce plain playbutton overlay for XeTeX and dvips
+  \bool_if:nF{\str_if_eq_p:Vn\g_mix_usrpbtn_tl{none}}{
+    \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
+  }
+  %\bool_if:nT{!\g_mix_pdfoutput_bool&&!\str_if_eq_p:Vn\g_mix_usrpbtn_tl{none}}{
+  %  \bool_if:NTF\g_mix_dvipdfmx_bool{
+  %    %due to a bug in xdvipdfmx
+  %    \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
+  %  }{
+  %    \tl_gset:Nn\g_mix_usrpbtn_tl{plain}
+  %  }
+  %}
   \bool_if:NTF\g_mix_usrdraft_bool{
     \tl_if_empty:NF\g_mix_usrlabel_tl{
       \mix_keytoaux_now:nn{ann@\g_mix_usrlabel_tl}{draft}
@@ -1454,21 +1502,28 @@
     \mix_pdfobj:nnn{}{dict}{
       /S/JavaScript/JS~(
         try{
-          var~ocgAll=this.getOCGs(this.pageNum);
-          for(var~i=0;i<ocgAll.length;i++){
+          if(typeof(annotRM)=='undefined'){annotRM=new~Array();}
+          if(typeof(annotRM['\g_mix_label_tl'])=='undefined'){
+            annotRM['\g_mix_label_tl']=
+              this.getAnnotRichMedia(this.pageNum,'\g_mix_label_tl');
+          }
+          \str_if_eq_x:nnF{\g_mix_usrpbtn_tl}{none}{
+            if(typeof(ocgBtn\int_use:N\g_mix_rmcnt_int)=='undefined'){
+              var~ocgs=this.getOCGs(this.pageNum);
+              for(var~i=0;i<ocgs.length;i++){
+                if(ocgs[i].name=='MediaPlayButton\int_use:N\g_mix_rmcnt_int'){
+                   var~ocgBtn\int_use:N\g_mix_rmcnt_int=ocgs[i];
+                }
+              }
+            }
             if(
-              ocgAll[i].name=='MediaPlayButton'&&(
+              !annotRM['\g_mix_label_tl'].activated&&(
                 app.viewerType=='Reader'||
                 app.viewerType=='Exchange'||
                 app.viewerType=='Exchange-Pro'
               )&&app.viewerVersion>=9
-            )ocgAll[i].state=true;
-          }
-          \tl_if_empty:NF\g_mix_usrlabel_tl{
-            if(typeof(annotRM)=='undefined'){annotRM=new~Array();}
-            if(typeof(annotRM['\g_mix_label_tl'])=='undefined'){
-              annotRM['\g_mix_label_tl']=
-                this.getAnnotRichMedia(this.pageNum,'\g_mix_label_tl');
+            ){
+              ocgBtn\int_use:N\g_mix_rmcnt_int.state=true;
             }
           }
         }catch(e){}
@@ -1489,32 +1544,24 @@
         \box_use:N\l_mix_poster_box
       }
     }
-    \bool_if:NTF\g_mix_usrpbtn_bool{
-      %scale and insert play button overlay
+    \str_if_eq_x:nnTF{\g_mix_usrpbtn_tl}{none}{
+      \hbox_to_wd:nn{\l_mix_wd_tl}{
+        \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
+      }
+    }{%insert play button overlay
       \mix_insert_btnocg: %create OCG
       \mix_insert_ocprops:
-      \hbox_set:Nn\l_mix_pbtn_box{\g_mix_pbtn_tl}
-      \dim_compare:nTF{\l_mix_tt_tl>\l_mix_wd_tl}{
-        \box_resize_to_wd:Nn\l_mix_pbtn_box{\l_mix_wd_tl}
-      }{
-        \box_resize_to_ht_plus_dp:Nn\l_mix_pbtn_box{\l_mix_tt_tl}
-      }
+      \cs_gset_eq:Nc\mix_pbtn:NN{g@mix@pbtn@\g_mix_usrpbtn_tl @tl}
+      \hbox_set:Nn\l_mix_pbtn_box{\mix_pbtn:NN\l_mix_wd_tl\l_mix_tt_tl}
       \box_move_down:nn{\l_mix_dp_tl}{
         \hbox_to_wd:nn{\l_mix_wd_tl}{
-          \hss
           \vbox_to_ht:nn{\l_mix_tt_tl}{
             \vss
             \mix_pdfbdc:
             \box_use:N\l_mix_pbtn_box
             \mix_pdfemc:
-            \vss
           }
-          \hss
         }
-      }
-    }{
-      \hbox_to_wd:nn{\l_mix_wd_tl}{
-        \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
       }
     }
     \int_gincr:N\g_mix_rmcnt_int
@@ -1781,9 +1828,14 @@
   final .default:n = {true},
 
   noplaybutton .choice:,
-  noplaybutton / true .code:n = {\bool_gset_false:N\g_mix_usrpbtn_bool},
-  noplaybutton / false .code:n = {\bool_gset_true:N\g_mix_usrpbtn_bool},
+  noplaybutton / true .code:n = {\tl_gset:Nn\g_mix_usrpbtn_tl{none}},
   noplaybutton .default:n = {true},
+
+  playbutton .choice:,
+  playbutton / fancy .code:n = {\tl_gset:Nn\g_mix_usrpbtn_tl{fancy}},
+  playbutton / plain .code:n = {\tl_gset:Nn\g_mix_usrpbtn_tl{plain}},
+  playbutton / none .code:n = {\tl_gset:Nn\g_mix_usrpbtn_tl{none}},
+  playbutton .default:n = {fancy},
 
   transparent .choice_code:n = {\tl_gset:Nx\g_mix_transp_tl{\l_keys_choice_tl}},
   transparent .generate_choices:n = {true,false},
@@ -2371,6 +2423,7 @@
 \cs_generate_variant:Nn\regex_match:nnTF{nV}
 \cs_generate_variant:Nn\regex_match:nnT{nV}
 \cs_generate_variant:Nn\tl_if_blank:nF{c}
+\cs_generate_variant:Nn\tl_if_eq:NNTF{Vn}
 
 \bool_new:N\g_mix_btndraft_bool
 \keys_define:nn{media9/mbtndraft}{
