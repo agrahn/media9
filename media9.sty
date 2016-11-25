@@ -39,8 +39,8 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{ifpdf}
 
-\def\g@mix@date@tl{2012/04/03}
-\def\g@mix@version@tl{0.3}
+\def\g@mix@date@tl{2012/04/16}
+\def\g@mix@version@tl{0.5}
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9 compatible media}
 
@@ -192,10 +192,6 @@
 }
 \ProcessKeysOptions{media9}
 \xetex_if_engine:T{\bool_gset_true:N\g_mix_dvipdfmx_bool}
-
-\AtBeginDocument{
-  \@ifpackageloaded{babel}{}{\msg_error:nnx{media9}{missing~package}{babel}}
-}
 
 \box_new:N\l_mix_poster_box
 \dim_new:N\g_mix_wd_dim
@@ -363,19 +359,20 @@
   }
 
   \cs_new:Nn\mix_pdfximage:n{%#1:bitmap file name
-    \bool_if:nF{
+    \bool_if:nTF{
       \str_if_eq_p:Vn\l_mix_ext_tl{png}
       ||\str_if_eq_p:Vn\l_mix_ext_tl{jpg}
       ||\str_if_eq_p:Vn\l_mix_ext_tl{jpeg}
       ||\str_if_eq_p:Vn\l_mix_ext_tl{jbig2}
       ||\str_if_eq_p:Vn\l_mix_ext_tl{jb2}
     }{
+      \immediate\pdfximage{#1}
+      \tl_gset:Nx\g_mix_pdflastximage_tl{\int_use:c{pdflastximage}~0~R}
+    }{
       \msg_error:nnxxx{media9}{wrong~image~resource}{#1}{pdftex}{
         png,~jpeg~and~jbig2
       }
     }
-    \immediate\pdfximage{#1}
-    \tl_gset:Nx\g_mix_pdflastximage_tl{\int_use:c{pdflastximage}~0~R}
   }
 
   \cs_new:Nn\mix_ndname:n{%#1:HEX encoded string
@@ -438,20 +435,21 @@
     }
 
     \cs_new:Nn\mix_pdfximage:n{%#1:bitmap file name
-      \bool_if:nF{
+      \bool_if:nTF{
           \str_if_eq_p:Vn\l_mix_ext_tl{png}
         ||\str_if_eq_p:Vn\l_mix_ext_tl{jpg}
         ||\str_if_eq_p:Vn\l_mix_ext_tl{jpeg}
+      }{
+        \special{pdf:image~@mix@obj\int_use:N\g_mix_obj_int\space
+          %move initial display off the page
+          matrix~0.000001~0~0~0.000001~-1000000~-1000000~(#1)}
+        \tl_gset:Nx\g_mix_pdflastximage_tl{@mix@obj\int_use:N\g_mix_obj_int}
+        \int_gincr:N\g_mix_obj_int
       }{
         \msg_error:nnxxx{media9}{wrong~image~resource}{#1}{dvipdfmx/xetex}{
           png~and~jpeg
         }
       }
-      \special{pdf:image~@mix@obj\int_use:N\g_mix_obj_int\space
-        %move initial display off the page
-        matrix~0.000001~0~0~0.000001~-1000000~-1000000~(#1)}
-      \tl_gset:Nx\g_mix_pdflastximage_tl{@mix@obj\int_use:N\g_mix_obj_int}
-      \int_gincr:N\g_mix_obj_int
     }
 
     \cs_new:Nn\mix_ndname:n{%#1:HEX encoded UTF16BE string
@@ -646,25 +644,26 @@
 
     %Image XObject
     \cs_new:Nn\mix_pdfximage:n{%#1:bitmap file name
-      \bool_if:nF{
+      \bool_if:nTF{
           \str_if_eq_p:Vn\l_mix_ext_tl{ps}
         ||\str_if_eq_p:Vn\l_mix_ext_tl{eps}
+      }{
+        \special{ps:~
+          mark~/_objdef~{mix@obj\int_use:N\g_mix_obj_int}~/NI~pdfmark~
+        }
+        \special{psfile=#1~hsize=0~vsize=0}
+        \special{ps:~
+          {
+            0~0~1~[1~0~0~1~0~0]~{}~image~%empty dummy, in case #1 is not
+          }?pdfmark~                     %a valid image file
+        }
+        \tl_gset:Nx\g_mix_pdflastximage_tl{{mix@obj\int_use:N\g_mix_obj_int}}
+        \int_gincr:N\g_mix_obj_int
       }{
         \msg_error:nnxxx{media9}{wrong~image~resource}{#1}{dvips}{
           Postscript~(ps/eps)~with~bitmapped~content
         }
       }
-      \special{ps:~
-        mark~/_objdef~{mix@obj\int_use:N\g_mix_obj_int}~/NI~pdfmark~
-      }
-      \special{psfile=#1~hsize=0~vsize=0}
-      \special{ps:~
-        {
-          0~0~1~[1~0~0~1~0~0]~{}~image~%empty dummy, in case #1 is not
-        }?pdfmark~                     %a valid image file
-      }
-      \tl_gset:Nx\g_mix_pdflastximage_tl{{mix@obj\int_use:N\g_mix_obj_int}}
-      \int_gincr:N\g_mix_obj_int
     }
 
     %3DNode name
@@ -728,7 +727,7 @@
     }
     \bool_if:nTF{
       %in 3D context, image resources must be embedded as Image XObjects, not
-      %files
+      %as file streams
       \g_mix_iiid_bool && (
         \str_if_eq_p:Vn\l_mix_ext_tl{jpg}
         || \str_if_eq_p:Vn\l_mix_ext_tl{jpeg}
@@ -737,30 +736,41 @@
         || \str_if_eq_p:Vn\l_mix_ext_tl{jb2}
         || \str_if_eq_p:Vn\l_mix_ext_tl{ps}
         || \str_if_eq_p:Vn\l_mix_ext_tl{eps}
+        || \str_if_eq_p:Vn\l_mix_ext_tl{pdf}
       )
     }{
-      %create Image XObject for bitmaps in 3D context
-      \cs_if_exist:cF{fileXimg_\mix_filemdfivesum:n{\l_mix_file_tl}}{
+      \cs_if_exist:cF{imgXobj_\mix_filemdfivesum:n{\l_mix_file_tl}}{
         \mix_pdfximage:n{\l_mix_file_tl}
-        \tl_gset:cx{fileXimg_\mix_filemdfivesum:n{\l_mix_file_tl}}{
+        \tl_gset:cx{imgXobj_\mix_filemdfivesum:n{\l_mix_file_tl}}{
           \g_mix_pdflastximage_tl
         }
       }
-      %fake FileSpec
-      \tl_gset:cx{fileSpec_#1}{\tl_use:c{
-        fileXimg_\mix_filemdfivesum:n{\l_mix_file_tl}}
+      %create fake FileSpec for current file name if not yet existent
+      \cs_if_exist:cF{ImgFileSpecFor3D_#1}{
+        \tl_gset:cx{ImgFileSpecFor3D_#1}{
+          \tl_use:c{imgXobj_\mix_filemdfivesum:n{\l_mix_file_tl}}
+        }
+      }
+      %add FileSpec to assets tree of current annot
+      \cs_if_exist:cF{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}{
+        \tl_gput_right:Nx\g_mix_assets_tl{
+          ~(#1)~\tl_use:c{ImgFileSpecFor3D_#1}
+        }
+        \tl_new:c{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}
+      }
+      \tl_gset:Nx\g_mix_lastasset_tl{
+        \tl_use:c{ImgFileSpecFor3D_#1}
       }
     }{
       %remaining file types in 3D context and any file type in case of Flash
-      %context will be embedded as fstreams;
-      %create embedded file stream for every new file
+      %context will be embedded as ordinary fstreams;
       \cs_if_exist:cF{fileEmb_\mix_filemdfivesum:n{\l_mix_file_tl}}{
         \mix_pdfobj:nnn{}{fstream}{\l_mix_file_tl}
         \tl_gset:cx{fileEmb_\mix_filemdfivesum:n{\l_mix_file_tl}}{
           \g_mix_pdflastobj_tl
         }
       }
-      %every new file name not yet seen should get a new FileSpec dictionary
+      %create FileSpec for current file name if not yet existent
       \cs_if_exist:cF{fileSpec_#1}{
         \mix_pdfobj:nnn{}{dict}{
           /Type/Filespec
@@ -770,16 +780,16 @@
         }
         \tl_gset:cx{fileSpec_#1}{\g_mix_pdflastobj_tl}
       }
-    }
-    %add FileSpec to assets tree of current annot
-    \cs_if_exist:cF{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}{
-      \tl_gput_right:Nx\g_mix_assets_tl{
-        ~(#1)~\tl_use:c{fileSpec_#1}
+      %add FileSpec to assets tree of current annot
+      \cs_if_exist:cF{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}{
+        \tl_gput_right:Nx\g_mix_assets_tl{
+          ~(#1)~\tl_use:c{fileSpec_#1}
+        }
+        \tl_new:c{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}
       }
-      \tl_new:c{fileAsset_\int_use:c{g_mix_rmcnt_int}_#1}
-    }
-    \tl_gset:Nx\g_mix_lastasset_tl{
-      \tl_use:c{fileSpec_#1}
+      \tl_gset:Nx\g_mix_lastasset_tl{
+        \tl_use:c{fileSpec_#1}
+      }
     }
   }
 }
@@ -822,38 +832,59 @@
     ||\dim_compare_p:n{\totalheight=\c_zero_dim}
   }{
     \prg_case_int:nnn{\g_mix_resizeflag_int}{
-      {\c_zero}{}{\c_seven}{}
-      {\c_four}{
+      {\c_one}{% depth given alone: no rescaling, only vertical movement
         \tl_set:Nx\l_mix_ht_tl{
-          \dim_eval:n{\height*\dim_ratio:nn{\l_mix_wd_tl}{\width}}
+          \dim_eval:n{
+            \totalheight-\l_mix_dp_tl
+          }
+        }
+      }
+      {\c_two}{% height given alone
+        \tl_set:Nx\l_mix_wd_tl{
+          \dim_eval:n{
+            \width*\dim_ratio:nn{\l_mix_ht_tl}{\height}
+          }
         }
         \tl_set:Nx\l_mix_dp_tl{
-          \dim_eval:n{\depth*\dim_ratio:nn{\l_mix_wd_tl}{\width}}
-        }
-      }
-      {\c_five}{% resize height only if original height!=0
-        \dim_compare:nT{\height!=\c_zero_dim}{
-          \tl_set:Nx\l_mix_ht_tl{
-            \dim_eval:n{
-              \totalheight*\dim_ratio:nn{\l_mix_wd_tl}{\width}-\l_mix_dp_tl
-            }
+          \dim_eval:n{
+            \depth*\dim_ratio:nn{\l_mix_ht_tl}{\height}
           }
         }
       }
-      {\c_six}{% resize depth only if original depth!=0
-        \dim_compare:nT{\depth!=\c_zero_dim}{
-          \tl_set:Nx\l_mix_dp_tl{
-            \dim_eval:n{
-              \totalheight*\dim_ratio:nn{\l_mix_wd_tl}{\width}-\l_mix_ht_tl
-            }
+      {\c_three}{% height and depth given
+        \tl_set:Nx\l_mix_wd_tl{
+          \dim_eval:n{
+            \width*\dim_ratio:nn{\l_mix_tt_tl}{\totalheight}
           }
         }
       }
-    }{ % 1, 2, 3
-      \tl_set:Nx\l_mix_wd_tl{
-        \dim_eval:n{\width*\dim_ratio:nn{\l_mix_tt_tl}{\totalheight}}
+      {\c_four}{% width given alone
+        \tl_set:Nx\l_mix_ht_tl{
+          \dim_eval:n{
+            \height*\dim_ratio:nn{\l_mix_wd_tl}{\width}
+          }
+        }
+        \tl_set:Nx\l_mix_dp_tl{
+          \dim_eval:n{
+            \depth*\dim_ratio:nn{\l_mix_wd_tl}{\width}
+          }
+        }
       }
-    }
+      {\c_five}{% width and depth given
+        \tl_set:Nx\l_mix_ht_tl{
+          \dim_eval:n{
+            \totalheight*\dim_ratio:nn{\l_mix_wd_tl}{\width}-\l_mix_dp_tl
+          }
+        }
+      }
+      {\c_six}{% width and height given
+        \tl_set:Nx\l_mix_dp_tl{
+          \dim_eval:n{
+            \depth*\dim_ratio:nn{\l_mix_ht_tl}{\height}
+          }
+        }
+      }
+    }{} % 0, 7
   }
   %apply scaling factor
   \dim_set:Nn\l_tmpa_dim{\l_mix_wd_tl}
@@ -876,9 +907,14 @@
   \mix_reset:
   \cs_if_exist:NT\Ginput@path{\cs_set_eq:NN\input@path\Ginput@path}
   \hbox_set:Nn\l_mix_poster_box{#2}
-  \mix@uribegin %treat URI characters correctly
+  \mix_uribegin: %treat URI characters correctly
   \keys_set:nn{media9/user}{#1}
-  \mix@uriend
+  \mix_uriend:
+  \tl_greplace_all:Nnn\g_mix_flashvars_tl{~&}{&}
+  \tl_greplace_all:Nnn\g_mix_flashvars_tl{&~}{&}
+  \tl_greplace_all:Nnn\g_mix_flashvars_tl{~=}{=}
+  \tl_greplace_all:Nnn\g_mix_flashvars_tl{=~}{=}
+  \tl_gtrim_spaces:N\g_mix_flashvars_tl
   \mix_scale:n{\l_mix_poster_box}
   \dim_compare:nT{\width=\c_zero_dim}
     {\box_set_wd:Nn\l_mix_poster_box{1pt}}
@@ -891,13 +927,13 @@
     %embed main asset
     \group_begin:
       \bool_set_eq:NN\l_mix_url_bool\g_mix_url_bool
-      \mix@uribegin
+      \mix_uribegin:
       \mix_embedasset:n{#3}
       \bool_gset:Nn\g_mix_iiid_bool{ %test on 3D file type
         \str_if_eq_p:Vn\l_mix_ext_tl{prc}||\str_if_eq_p:Vn\l_mix_ext_tl{u3d}
       }
       \tl_gset:Nx\g_mix_mainasset_tl{~\g_mix_lastasset_tl}
-      \mix@uriend
+      \mix_uriend:
     \group_end:
     %secondary assets (added by addresource)
     \seq_map_function:NN\g_mix_res_seq\mix_embedasset:n
@@ -1039,6 +1075,7 @@
       /RichMediaSettings~\l_mix_settings_tl
       /RichMediaContent~\l_mix_content_tl
     }
+    \tl_set:Nx\l_mix_settings_tl{\g_mix_pdflastobj_tl}
     \hbox_to_wd:nn{\l_mix_wd_tl}{
       \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
     }
@@ -1047,37 +1084,22 @@
   \group_end:
 }
 
-\ExplSyntaxOff
-\def\mix@uribegin{%
-  %make sure special characters in URIs (RFC 3986) are used unmodified
-  \begingroup%
-  \defineshorthand{"}{\detokenize{"}}%
-  \defineshorthand{:}{\detokenize{:}}%
-  \defineshorthand{/}{\detokenize{/}}%
-  \defineshorthand{?}{\detokenize{?}}%
-  \defineshorthand{[}{\detokenize{[}}%
-  \defineshorthand{]}{\detokenize{]}}%
-  \defineshorthand{@}{\detokenize{@}}%
-  \defineshorthand{!}{\detokenize{!}}%
-  \defineshorthand{$}{\detokenize{$}}%
-  \defineshorthand{&}{\detokenize{&}}%
-  \defineshorthand{'}{\detokenize{'}}%
-  \defineshorthand{(}{\detokenize{(}}%
-  \defineshorthand{)}{\detokenize{)}}%
-  \defineshorthand{*}{\detokenize{*}}%
-  \defineshorthand{+}{\detokenize{+}}%
-  \defineshorthand{,}{\detokenize{,}}%
-  \defineshorthand{;}{\detokenize{;}}%
-  \defineshorthand{=}{\detokenize{=}}%
-  \defineshorthand{-}{\detokenize{-}}%
-  \defineshorthand{.}{\detokenize{.}}%
-  \defineshorthand{_}{\detokenize{_}}%
-  \defineshorthand{~}{\detokenize{~}}%
-  \def\%{\string\%}%
-  \def\#{\string\#}%
+%defines environment \mix_uribegin: ... \mix_uriend: to sanitize possibly
+%active chars in URLs (RFC 2396) and path specifications;
+%code contributed by E. Gregorio
+\group_begin:
+\char_set_catcode_active:N\~
+\cs_new:Npn\mix_uribegin:{
+  \group_begin:
+  \tl_map_inline:nn{";/?:@&=+$|,-_.!~*'()}{
+    \group_begin:
+    \char_set_lccode:nn{`\~}{`##1}
+    \tl_to_lowercase:n{\group_end:\cs_set:Npn~}{\token_to_str:N##1}
+  }
+  \cs_set:Npn\%{\token_to_str:N\%}
 }
-\def\mix@uriend{\endgroup}%
-\ExplSyntaxOn
+\group_end:
+\cs_set_eq:NN\mix_uriend:\group_end:
 
 % macro to format a real number in tl variable
 % * to show at most 9 places after `.'
@@ -1414,13 +1436,7 @@
   add3Djscript .code:n = {\seq_gput_right:Nn\g_mix_script_seq{#1}},
   add3Djscript .value_required:,
 
-  flashvars .code:n = {
-    \tl_gset:Nx\g_mix_flashvars_tl{\tl_trim_spaces:n{#1}}
-    \tl_greplace_all:Nnn\g_mix_flashvars_tl{~&}{&}
-    \tl_greplace_all:Nnn\g_mix_flashvars_tl{&~}{&}
-    \tl_greplace_all:Nnn\g_mix_flashvars_tl{~=}{=}
-    \tl_greplace_all:Nnn\g_mix_flashvars_tl{=~}{=}
-  },
+  flashvars .tl_gset_x:N = \g_mix_flashvars_tl,
   flashvars .value_required:,
 
   activate .choice:,
@@ -1505,7 +1521,7 @@
   3Dortho .code:n = {
     \bool_gset_true:N\g_mix_opt_iiidview_bool
     \bool_gset_true:N\g_mix_opt_iiidortho_bool
-    \fp_compare:nNnF#1=\c_zero{
+    \fp_compare:nF{#1=0.0}{
       \fp_gset:Nn\g_mix_opt_oscale_fp{#1}
       \bool_if:NF\l_mix_roo_bool{
         \fp_set:Nn\l_mix_temp_fp{1}
@@ -1761,7 +1777,7 @@
         {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{ORTHO}{a~VIEW}
     }
     \bool_set_true:N\l_mix_iiidortho_bool
-    \fp_compare:nNnF#1=\c_zero{
+    \fp_compare:nF{#1=0.0}{
       \fp_set:Nn\l_mix_oscale_fp{#1}
       \bool_if:NF\l_mix_roo_bool{
         \fp_set:Nn\l_mix_temp_fp{1}
