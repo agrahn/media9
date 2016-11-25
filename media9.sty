@@ -39,8 +39,8 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{ifpdf}
 
-\def\g@mix@date@tl{2012/04/16}
-\def\g@mix@version@tl{0.5}
+\def\g@mix@date@tl{2012/04/25}
+\def\g@mix@version@tl{0.6}
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9 compatible media}
 
@@ -130,11 +130,13 @@
   activate / pagevisible .code:n = {\tl_gset:Nn\g_mix_pkgact_tl{/PV}},
   activate / pageopen .code:n = {\tl_gset:Nn\g_mix_pkgact_tl{/PO}},
   activate / onclick .code:n = {\tl_gset:Nn\g_mix_pkgact_tl{/XA}},
+  activate .value_required:,
 
   deactivate .choice:,
   deactivate / pageinvisible .code:n = {\tl_gset:Nn\g_mix_pkgdeact_tl{/PI}},
   deactivate / pageclose .code:n = {\tl_gset:Nn\g_mix_pkgdeact_tl{/PC}},
   deactivate / onclick .code:n = {\tl_gset:Nn\g_mix_pkgdeact_tl{/XD}},
+  deactivate .value_required:,
 
   transparent .choice_code:n = {
     \tl_gset:Nx\g_mix_pkgtransp_tl{\l_keys_choice_tl}},
@@ -152,6 +154,7 @@
   3Dplaytype / linear .code:n = {\tl_gset:Nn\g_mix_pkgplaytpe_tl{Linear}},
   3Dplaytype / oscillating .code:n = {
     \tl_gset:Nn\g_mix_pkgplaytpe_tl{Oscillating}},
+  3Dplaytype .value_required:,
 
   3Dplaycount .code:n = {\tl_gset:Nn\g_mix_pkgplaycnt_tl{
     \exp_after:wN\int_value:w \dim_eval:w#1sp\dim_eval_end:}},
@@ -243,7 +246,8 @@
 
 %reset various variables for every new media inclusion
 \cs_new:Nn\mix_reset:{
-  \tl_gset:Nx\g_mix_label_tl{rm.\int_use:N\g_mix_rmcnt_int}
+  \tl_gset:Nx\g_mix_label_tl{rm@\int_use:N\g_mix_rmcnt_int}
+  \tl_gset:Nx\g_mix_usrlabel_tl{}
   \tl_gset:Nn\g_mix_flashvars_tl{}
   \tl_gset:Nn\g_mix_assets_tl{}
   \tl_gset:Nn\g_mix_configurations_tl{}
@@ -290,6 +294,7 @@
 
   \tl_set:Nn\l_mix_iiidviewarray_tl{}
   \tl_gset:Nn\g_mix_vfile_tl{}
+  \tl_gset:Nn\g_mix_nrdflt_tl{/NR~true}
 }
 
 %3D settings to be reset before creating an additional view
@@ -312,6 +317,7 @@
 
   \tl_set:Nn\l_mix_naarray_tl{} %array of node dicts
   \tl_set:Nn\l_mix_saarray_tl{} %array of crosssect dicts
+  \tl_set_eq:NN\l_mix_nr_tl\g_mix_nrdflt_tl
 }
 
 %wrong image resource for 3D
@@ -999,6 +1005,7 @@
 
       \tl_set:Nn\l_mix_naarray_tl{}
       \tl_set:Nn\l_mix_saarray_tl{}
+      \tl_set_eq:NN\l_mix_nr_tl\g_mix_nrdflt_tl
 
       \mix_view:n{Default}
       \tl_set:Nx\l_mix_dfltview_tl{\g_mix_pdflastobj_tl}
@@ -1065,6 +1072,10 @@
       /Deactivation~<</Condition\g_mix_deact_tl>>
     }
     \tl_set:Nx\l_mix_settings_tl{\g_mix_pdflastobj_tl}
+    \tl_if_empty:NF\g_mix_usrlabel_tl{
+      \tl_gset_eq:NN\g_mix_label_tl\g_mix_usrlabel_tl
+    }
+    % #1:width, #2:height, #3:depth, #4:content (key-value)
     \mix_pdfannot:nnnn{\l_mix_wd_tl}{\l_mix_ht_tl}{\l_mix_dp_tl}{
       /Subtype/RichMedia
       /F~4
@@ -1075,7 +1086,22 @@
       /RichMediaSettings~\l_mix_settings_tl
       /RichMediaContent~\l_mix_content_tl
     }
-    \tl_set:Nx\l_mix_settings_tl{\g_mix_pdflastobj_tl}
+    \tl_if_empty:NF\g_mix_usrlabel_tl{
+      \mix_pdfobj:nnn{}{dict}{
+        /S/JavaScript/JS~(
+          if(typeof(annotRM)=='undefined'){annotRM=new~Array();}
+          annotRM['\g_mix_label_tl']=
+            this.getAnnotRichMedia(this.pageNum,~'\g_mix_label_tl');
+        )
+      }
+      \mix_pdfannot:nnnn{0pt}{0pt}{0pt}{
+        /Subtype/Widget
+        /FT/Btn/Ff~65537
+        /BS~<</W~0>>
+        /T~(fd@\g_mix_label_tl)
+        /AA~<</PO~\g_mix_pdflastobj_tl~/PV~\g_mix_pdflastobj_tl>>
+      }
+    }
     \hbox_to_wd:nn{\l_mix_wd_tl}{
       \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
     }
@@ -1356,7 +1382,8 @@
     >>
     /C2W~[\l_mix_ciiw_tl]
     /CO~\l_mix_roo_tl
-    /NR~true/NA~[\l_mix_naarray_tl]
+    \l_mix_nr_tl
+    /NA~[\l_mix_naarray_tl]
     /SA~[\l_mix_saarray_tl]
     \l_mix_bg_tl\l_mix_ls_tl\l_mix_rm_tl
     /XN~(#1)
@@ -1391,18 +1418,20 @@
 
 \seq_new:N\g_mix_res_seq
 \seq_new:N\g_mix_script_seq
+\tl_new:N\g_mix_rmnames_tl
+
 \keys_define:nn{media9/user}{
   %user override automatic label
   label .code:n = {
-    \tl_gset:Nx\g_mix_label_tl{rm.#1}
-    \cs_if_exist:cTF{rm.#1}{
+    \tl_gset:Nx\g_mix_usrlabel_tl{#1}
+    \cs_if_exist:cTF{rm@#1}{
       \msg_warning:nnx{media9}{same~label}{#1}
       \cs_if_exist:NF\g_mix_samelabel_tl{
         \tl_new:N\g_mix_samelabel_tl
         \AtEndDocument{\msg_warning:nn{media9}{multiple~labels}}
       }
     }{
-      \tl_new:c{rm.#1}
+      \tl_new:c{rm@#1}
     }
   },
   label .value_required:,
@@ -1443,11 +1472,13 @@
   activate / pagevisible .code:n = {\tl_gset:Nn\g_mix_act_tl{/PV}},
   activate / pageopen .code:n = {\tl_gset:Nn\g_mix_act_tl{/PO}},
   activate / onclick .code:n = {\tl_gset:Nn\g_mix_act_tl{/XA}},
+  activate .value_required:,
 
   deactivate .choice:,
   deactivate / pageinvisible .code:n = {\tl_gset:Nn\g_mix_deact_tl{/PI}},
   deactivate / pageclose .code:n = {\tl_gset:Nn\g_mix_deact_tl{/PC}},
   deactivate / onclick .code:n = {\tl_gset:Nn\g_mix_deact_tl{/XD}},
+  deactivate .value_required:,
 
   draft .choice:,
   draft / true .code:n = {\bool_gset_true:N\g_mix_usrdraft_bool},
@@ -1474,6 +1505,7 @@
   3Dplaytype / linear .code:n = {\tl_gset:Nn\g_mix_playtpe_tl{Linear}},
   3Dplaytype / oscillating .code:n = {
     \tl_gset:Nn\g_mix_playtpe_tl{Oscillating}},
+  3Dplaytype .value_required:,
 
   3Dplaycount .code:n = {\tl_gset:Nn\g_mix_playcnt_tl{
     \exp_after:wN\int_value:w \dim_eval:w#1sp\dim_eval_end:}},
@@ -1489,6 +1521,17 @@
   3Dnavpane .choice_code:n = {\tl_gset:Nx\g_mix_nav_tl{\l_keys_choice_tl}},
   3Dnavpane .generate_choices:n = {true,false},
   3Dnavpane .default:n = {true},
+
+  3Dpartsattrs .choice_code:n = {
+    \tl_set:Nn\l_mix_keep_tl{keep}
+    \tl_if_eq:NNTF\l_keys_choice_tl\l_mix_keep_tl{
+      \tl_gset:Nn\g_mix_nrdflt_tl{/NR~false}
+    }{
+      \tl_gset:Nn\g_mix_nrdflt_tl{/NR~true}
+    }
+  },
+  3Dpartsattrs .generate_choices:n = {keep,restore},
+  3Dpartsattrs .value_required:,
 
   3Dcoo .code:n = {\tl_gset:Nn\g_mix_opt_coo_tl{#1}
     \bool_gset_true:N\g_mix_opt_iiidview_bool},
@@ -1833,6 +1876,21 @@
     }
   },
   RENDERMODE .value_required:,
+
+  PARTSATTRS .choice_code:n = {
+    \int_compare:nF{\l_mix_level_tl=\c_zero}{
+      \msg_error:nnxxxx{media9}{key~not~allowed}
+        {\g_mix_vfile_tl}{\int_use:N\l_mix_lineno_int}{PARTSATTRS}{VIEW}
+    }
+    \tl_set:Nn\l_mix_keep_tl{keep}
+    \tl_if_eq:NNTF\l_keys_choice_tl\l_mix_keep_tl{
+      \tl_set:Nn\l_mix_nr_tl{/NR~false}
+    }{
+      \tl_set:Nn\l_mix_nr_tl{/NR~true}
+    }
+  },
+  PARTSATTRS .generate_choices:n = {keep,restore},
+  PARTSATTRS .value_required:,
 
   PART .code:n = {
     \int_compare:nF{\l_mix_level_tl=\c_zero}{
