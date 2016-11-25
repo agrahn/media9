@@ -4,7 +4,7 @@
 %
 % multimedia inclusion package
 %
-% Copyright 2012--\today Alexander Grahn
+% Copyright 2012--\today, Alexander Grahn
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -42,8 +42,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2013/11/14}
-\def\g@mix@version@tl{0.35}
+\def\g@mix@date@tl{2014/02/06}
+\def\g@mix@version@tl{0.39}
 
 \def\g@mix@liiikerneldate{2013/07/28}
 \def\g@mix@liiipkgdate{2013/07/28}
@@ -468,6 +468,22 @@
 }
 \group_end:
 
+%takes Field object refs
+\tl_if_exist:cF{@anim@fields}{\tl_gset:cn{@anim@fields}{}}
+%macro for adding AcroForm entry to PDF Catalog
+\cs_new:Nn\mix_insert_acroform:{
+  \tl_if_exist:cF{Acro@Form@added}{
+    \mix_pdfobj:nnn{}{array}{}
+    \tl_gset:Nx\g_mix_fieldsarray_tl{\g_mix_pdflastobj_tl}
+    \mix_pdfcatalog:n{
+      /AcroForm~<</Fields~\g_mix_fieldsarray_tl/NeedAppearances~true>>}
+    \AtEndDocument{%
+      \mix_pdfobj:nnn{\g_mix_fieldsarray_tl}{array}{\@anim@fields}
+    }
+    \tl_gset:cn{Acro@Form@added}{}
+  }
+}
+
 %commands for creating PDF objects, annots etc.
 \bool_if:NTF\g_mix_pdfoutput_bool{
   %helper func to remove `0 R' part from pdf obj reference
@@ -531,13 +547,7 @@
     \tl_set:Nn\l_mix_ndname_tl{\mix_unescapehex:n{#1}}
   }
 
-  %macro for adding AcroForm entry to PDF Catalog
-  \cs_new:Nn\mix_insert_acroform:{
-    \tl_if_exist:cF{Acro@Form@added}{
-      \pdfcatalog{/AcroForm~<</Fields~[]/NeedAppearances~true>>}
-      \tl_gset:cn{Acro@Form@added}{}
-    }
-  }
+  \cs_new:Nn\mix_pdfcatalog:n{\pdfcatalog{#1}}
 }{
   \int_new:N\g_mix_obj_int % object ID
   \bool_if:NTF\g_mix_dvipdfmx_bool{ %dvipdfmx/XeTeX
@@ -619,13 +629,7 @@
       \tl_set:Nn\l_mix_ndname_tl{<#1>}
     }
 
-    \cs_new:Nn\mix_insert_acroform:{
-      \tl_if_exist:cF{Acro@Form@added}{
-        \special{pdf:put~@catalog~<<
-          /AcroForm~<</Fields~[]/NeedAppearances~true>>>>}
-        \tl_gset:cn{Acro@Form@added}{}
-      }
-    }
+    \cs_new:Nn\mix_pdfcatalog:n{\special{pdf:put~@catalog~<<#1>>}}
   }{
     % dvips
     \bool_new:N\g_mix_powerdot_bool %to cope with some powerdot oddity
@@ -896,22 +900,16 @@
       \tl_set:Nn\l_mix_ndname_tl{mix@unicode}
     }
 
-    \cs_new:Nn\mix_insert_acroform:{
-      \tl_if_exist:cF{Acro@Form@added}{
-        \special{ps:
-          mark~{Catalog}~<</AcroForm~<</Fields~[]/NeedAppearances~true>>>>~
-            /PUT~pdfmark
-        }
-        \tl_gset:cn{Acro@Form@added}{}
-      }
+    \cs_new:Nn\mix_pdfcatalog:n{
+      \special{ps:~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
     }
   }
 }
 
 \cs_new:Nn\mix_embedasset:n{ %#1 file name or url
   %check if #1 is online resource
-  \bool_set_false:N\l_mix_url_bool
-  \regex_match:nnT{(^[Hh][Tt][Tt][Pp][Ss]?|^[Ff][Tt][Pp]):\/\/}{#1}{
+  \bool_set_false:N\l_mix_url_bool\tl_set:Nx\l_tmpa_tl{#1}
+  \regex_match:nVT{(^[Hh][Tt][Tt][Pp][Ss]?|^[Ff][Tt][Pp]):\/\/}\l_tmpa_tl{
     \bool_set_true:N\l_mix_url_bool
   }
   \filename@parse{#1}
@@ -1047,6 +1045,15 @@
   }
 }
 
+\msg_set:nnn{media9}{zero~size}{
+  Media~annotation~\msg_line_context:\ has~zero\\
+  size~in~at~least~one~dimension.\\\\
+  Provide~a~poster~text~with~non-zero~width~and\\
+  height,~or~specify~a~suitable~size~via~`width'\\
+  and~`height'~options.
+}
+
+
 %calculates widget dimensions from natural ones, taking resizing options
 %into account
 \int_new:N\g_mix_resizeflag_int% resizing flags according to options given
@@ -1136,6 +1143,12 @@
   }{
     \box_resize:Nnn#1{\l_mix_wd_tl}{\l_mix_tt_tl}
   }
+  \bool_if:nT{
+    \dim_compare_p:n{\l_mix_wd_tl=\c_zero_dim} ||
+    \dim_compare_p:n{\l_mix_tt_tl=\c_zero_dim}
+  }{
+    \msg_warning:nn{media9}{zero~size}
+  }
 }
 
 \bool_new:N\g_mix_iiid_bool
@@ -1179,6 +1192,12 @@
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{=~}{=}
   \tl_gtrim_spaces:N\g_mix_flashvars_tl
   \mix_scale:n{\l_mix_poster_box}
+  \bool_if:nT{
+    \dim_compare_p:n{\l_mix_tt_tl=\c_zero_dim}||
+    \dim_compare_p:n{\l_mix_wd_tl=\c_zero_dim}
+  }{
+    \bool_gset_false:N\g_mix_usrpbtn_bool
+  }
   \bool_if:NTF\g_mix_usrdraft_bool{
     \tl_if_empty:NF\g_mix_usrlabel_tl{
       \mix_keytoaux_now:nn{ann@\g_mix_usrlabel_tl}{draft}
@@ -1391,6 +1410,7 @@
         /T~(fd@\g_mix_label_tl)
         /AA~<</PO~\g_mix_pdflastobj_tl~/PV~\g_mix_pdflastobj_tl>>
       }
+      \tl_gput_right:Nx\@anim@fields{\g_mix_pdflastann_tl\space}
       \mix_insert_acroform:
     }
     \hbox_overlap_right:n{
@@ -2272,6 +2292,7 @@
 \cs_new:Npn\mix_separate_cmd_from_actn:w#1[#2]#3\q_stop{#1}
 \cs_new:Npn\mix_separate_arg_from_actn:w#1[#2]#3\q_stop{#2}
 \cs_generate_variant:Nn\regex_match:nnTF{nV}
+\cs_generate_variant:Nn\regex_match:nnT{nV}
 \cs_generate_variant:Nn\tl_if_blank:nF{c}
 
 \bool_new:N\g_mix_btndraft_bool
@@ -2291,6 +2312,9 @@
 \keys_define:nn{media9/mbtn}{
   draft .code:n = {},
   final .code:n = {},
+ 
+  tooltip .tl_gset_x:N = \g_mix_tooltip_tl,
+  tooltip .value_required:,
 
   overface .code:n = {
     \hbox_set:Nn\l_mix_poster_box{#1}
@@ -2471,6 +2495,7 @@
   \tl_gclear:N\g_mix_overbtn_tl
   \tl_gclear:N\g_mix_downbtn_tl
   \tl_gclear:N\g_mix_btnactions_tl
+  \tl_gclear:N\g_mix_tooltip_tl
   %process options
   \bool_gset_eq:NN\g_mix_btndraft_bool\g_mix_pkgdraft_bool
   \mix_uribegin: %treat URI characters correctly
@@ -2489,6 +2514,7 @@
     \mix_pdfannot:nnnn{\width}{\height}{\depth}{
       /Subtype/Widget
       /T~(mbtn@\int_use:N\g_mix_mbtncnt_int)
+      \tl_if_empty:NF\g_mix_tooltip_tl{/TU~(\g_mix_tooltip_tl)}
       /FT/Btn/Ff~65536
       /H/P
       /MK~<<
@@ -2503,6 +2529,7 @@
         \tl_if_empty:NF\g_mix_btnactions_tl{/Next~[\g_mix_btnactions_tl]}
       >>
     }
+    \tl_gput_right:Nx\@anim@fields{\g_mix_pdflastann_tl\space}
     \mix_insert_acroform:
     \hbox_to_wd:nn{\width}{
       \vrule~width~\c_zero_dim~height~\height~depth~\depth\hss
