@@ -41,8 +41,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{atenddvi}
 
-\def\g@mix@date@tl{2016/02/25}
-\def\g@mix@version@tl{0.65}
+\def\g@mix@date@tl{2016/11/08}
+\def\g@mix@version@tl{0.70}
 
 \def\g@mix@liiikerneldate{2015/09/27}
 \def\g@mix@liiipkgdate{2015/09/27}
@@ -143,17 +143,21 @@
 \keys_define:nn{media9}{
   xetex .code:n = {
     \PassOptionsToPackage{xetex}{pdfbase}
-    \PassOptionsToPackage{xetex}{ocgbase}
   },
 
   dvipdfmx .code:n = {
     \PassOptionsToPackage{dvipdfmx}{pdfbase}
-    \PassOptionsToPackage{dvipdfmx}{ocgbase}
     \bool_gset_true:N\g_mix_dvipdfmx_bool
   },
 
   bigfiles .choice:,
-  bigfiles / true .code:n = {\PassOptionsToPackage{bigfiles}{pdfbase}},
+  bigfiles / true .code:n = {
+    \@ifpackageloaded{pdfbase}{
+      \bool_gset_true:N\g_pbs_pkgbigfiles_bool
+    }{
+      \PassOptionsToPackage{bigfiles}{pdfbase}
+    }
+  },
   bigfiles / false .code:n = {},
   bigfiles .default:n = {true},
 
@@ -322,8 +326,9 @@
 %aliases for commands from pdfbase.sty
 \cs_set_eq:NN\mix_pdfobj:nnn   \pbs_pdfobj:nnn
 \cs_set_eq:NN\mix_pdfannot:nnnn\pbs_pdfannot:nnnn
+\cs_set_eq:NN\mix_appendtofields:n\pbs_appendtofields:n
 \cs_set_eq:NN\mix_pdflink:nn   \pbs_pdflink:nn
-\cs_new:Nn\mix_pdfxform:n{\pbs_pdfxform:nn{1}{#1}}
+\cs_new:Nn\mix_pdfxform:n{\pbs_pdfxform:nnn{1}{1}{#1}}
 \cs_set_eq:NN\mix_pdfximage:n  \pbs_pdfximage:n
 \cs_set_eq:NN\mix_pdfcatalog:n \pbs_pdfcatalog:n
 
@@ -374,10 +379,15 @@
 }{
   \sys_if_engine_luatex:TF{
     \RequirePackage{pdftexcmds}
-    \cs_new:Nn\mix_filemdfivesum:n{\pdf@filemdfivesum{#1}}
-    \cs_new:Nn\mix_unescapehex:n{<#1>}
+    \cs_new_nopar:Nn\mix_filemdfivesum:n{\pdf@filemdfivesum{#1}}
+    %\cs_new:Nn\mix_unescapehex:n{<#1>}
+    \cs_new_nopar:Nn\mix_unescapehex:n{(\pdf@unescapehex{#1})}
   }{
-    \cs_new:Nn\mix_filemdfivesum:n{#1}
+    \cs_if_exist:NTF\mdfivesum{
+      \cs_new_nopar:Nn\mix_filemdfivesum:n{\mdfivesum file {#1}}
+    }{  
+      \cs_new_nopar:Nn\mix_filemdfivesum:n{#1}
+    }
   }
 }
 
@@ -534,46 +544,6 @@
   as~image~resources.
 }
 
-%excessive DVI resolution message
-\group_begin:
-\char_set_catcode_active:N\+\let+\space
-\cs_new:Nx\mix_dpiwarning:{
-  {Resolution~1200~gt~VResolution~1200~gt~or~product~(Ghostscript)~
-  search~{pop~pop~pop~true}{pop~false}ifelse~and~{
-  (\token_to_str:N\n
-   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
-   @@++++Warning:+DVI+resolution+greater+than+1200+dpi!+++++@@\token_to_str:N\n
-   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n
-   @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@+Media+button+faces+may+be+poorly+scaled+or+invisible++@@\token_to_str:N\n
-   @@+in+the+PDF+output.++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@+Dvips+should+be+called+either+without+option+`-Ppdf':+@@\token_to_str:N\n
-   @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@+++dvips+\c_job_name_tl\token_to_str:N\n
-   @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@+or+with+a+different+resolution+setting:+++++++++++++++@@\token_to_str:N\n
-   @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@+++dvips+-Ppdf+-D1200+\c_job_name_tl\token_to_str:N\n
-   @@+++++++++++++++++++++++++++++++++++++++++++++++++++++++@@\token_to_str:N\n
-   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\token_to_str:N\n)
-   print}~if}~?pdfmark
-}
-\group_end:
-
-%adding AcroForm dict to PDF Catalog
-\tl_if_exist:cF{@anim@fields}{\tl_new:c{@anim@fields}}%takes Field object refs
-\tl_if_exist:cF{Acro@Form@added}{ %AcroForm dict
-  \AtEndDvi{
-    \tl_if_empty:NF\@anim@fields{
-      \mix_pdfobj:nnn{}{array}{\@anim@fields}
-      \mix_pdfcatalog:n{
-        /AcroForm~<</Fields~\mix_pdflastobj:/NeedAppearances~false>>}
-    }
-  }
-  \tl_gset:cn{Acro@Form@added}{}
-}
-
 \cs_new:Nn\mix_insert_btnocg:{%OCG for play button overlay
   \ocgbase_new_ocg:nnn{MediaPlayButton\int_use:N\g_mix_rmcnt_int}{
     /Print<</PrintState/OFF>>/Export<</ExportState/OFF>>
@@ -593,12 +563,6 @@
       \tl_set:Nn\l_mix_ndname_tl{<#1>}
     }
   }{
-    %determine DVI resolution and output warning message if too big
-    \cs_if_exist:NF\g_mix_dpiwarned_tl{
-      \tl_new:N\g_mix_dpiwarned_tl
-      \AtEndDvi{\special{ps::[nobreak]\mix_dpiwarning:}}
-    }
-
     %3DNode name
     \cs_new:Nn\mix_ndname:n{%#1:HEX encoded unicode string
       \special{ps:~
@@ -674,7 +638,7 @@
       %remaining file types in 3D context and any file type in case of Flash
       %context will be embedded as ordinary fstreams;
       \cs_if_exist:cF{fileEmb_\mix_filemdfivesum:n{\l_mix_file_tl}}{
-        \mix_pdfobj:nnn{}{fstream}{\l_mix_file_tl}
+        \mix_pdfobj:nnn{}{fstream}{{}{\l_mix_file_tl}}
         \tl_gset:cx{fileEmb_\mix_filemdfivesum:n{\l_mix_file_tl}}{
           \mix_pdflastobj:
         }
@@ -973,10 +937,12 @@
     \bool_if:nF{\str_if_eq_p:Vn\g_mix_usrpbtn_tl{none}}{
       %attach script that switches off play button overlay upon activation
       \mix_pdfobj:nnn{}{stream}{
-        var~ocgs=host.getOCGs(host.pageNum);
-        for(var~i=0;i<ocgs.length;i++){
-          if(ocgs[i].name=='MediaPlayButton\int_use:N\g_mix_rmcnt_int'){
-            ocgs[i].state=false;
+        {}{
+          var~ocgs=host.getOCGs(host.pageNum);
+          for(var~i=0;i<ocgs.length;i++){
+            if(ocgs[i].name=='MediaPlayButton\int_use:N\g_mix_rmcnt_int'){
+              ocgs[i].state=false;
+            }
           }
         }
       }
@@ -1221,7 +1187,7 @@
       /T~(fd@\g_mix_label_tl)
       /AA~<</PO~\mix_pdflastobj:~/PV~\mix_pdflastobj:>>
     }
-    \tl_gput_right:Nx\@anim@fields{\space\mix_pdflastann:\space}
+    \mix_appendtofields:n{\mix_pdflastann:}
     \hbox_overlap_right:n{\box_use:N\l_mix_poster_box}
     \str_if_eq_x:nnTF{\g_mix_usrpbtn_tl}{none}{
       \hbox_to_wd:nn{\g_mix_wd_tl}{
@@ -1232,17 +1198,14 @@
       \cs_gset_eq:Nc\mix_pbtn:NN{g@mix@pbtn@\g_mix_usrpbtn_tl @tl}
       %\hbox_set:Nn\l_mix_pbtn_box{\mix_pbtn:NN\g_mix_wd_tl\g_mix_tt_tl}
       \sbox\l_mix_pbtn_box{\mix_pbtn:NN\g_mix_wd_tl\g_mix_tt_tl}
-%      \pbs_pdfxform:nn{0}{\l_mix_pbtn_box}
       \box_move_down:nn{\g_mix_dp_tl}{
         \hbox_to_wd:nn{\g_mix_wd_tl}{
           \vbox_to_ht:nn{\g_mix_tt_tl}{
             \vss
             \ocgbase_oc_bdc:n{\g_mix_btnocg_tl}
             \box_use:N\l_mix_pbtn_box
-%            \pbs_pdfrefxform:n{\pbs_pdflastxform:}
             \ocgbase_oc_emc:
           }
-%          \hss
         }
       }
     }
@@ -2448,15 +2411,11 @@
         \tl_if_empty:NF\g_mix_btnactions_tl{/Next~[\g_mix_btnactions_tl]}
       >>
     }
-    \tl_gput_right:Nx\@anim@fields{\mix_pdflastann:\space}
+    \mix_appendtofields:n{\mix_pdflastann:}
     \hbox_to_wd:nn{\width}{
       \vrule~width~\c_zero_dim~height~\height~depth~\depth\hss
     }
     \int_gincr:N\g_mix_mbtncnt_int
-    \cs_if_exist:NF\g_mix_dpiwarned_tl{
-      \tl_new:N\g_mix_dpiwarned_tl
-      \AtEndDvi{\special{ps::[nobreak]\mix_dpiwarning:}}
-    }
   }
   \group_end:
 }
