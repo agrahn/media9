@@ -40,9 +40,10 @@
 \RequirePackage{xparse}
 \RequirePackage{ifpdf}
 \RequirePackage{atbegshi}
+\RequirePackage{tikz}
 
-\def\g@mix@date@tl{2013/11/12}
-\def\g@mix@version@tl{0.34}
+\def\g@mix@date@tl{2013/11/14}
+\def\g@mix@version@tl{0.35}
 
 \def\g@mix@liiikerneldate{2013/07/28}
 \def\g@mix@liiipkgdate{2013/07/28}
@@ -120,6 +121,8 @@
 \tl_gclear:N\g_mix_pkgopt_ls_tl
 \tl_gclear:N\g_mix_pkgopt_rm_tl
 \bool_new:N\g_mix_pkgiiidcalc_bool
+\bool_new:N\g_mix_pkgpbtn_bool
+\bool_gset_true:N\g_mix_pkgpbtn_bool
 
 %floating window settings
 \group_begin:
@@ -164,6 +167,11 @@
   final / true .code:n = {\bool_gset_false:N\g_mix_pkgdraft_bool},
   final / false .code:n = {\bool_gset_true:N\g_mix_pkgdraft_bool},
   final .default:n = {true},
+
+  noplaybutton .choice:,
+  noplaybutton / true .code:n = {\bool_gset_false:N\g_mix_pkgpbtn_bool},
+  noplaybutton / false .code:n = {\bool_gset_true:N\g_mix_pkgpbtn_bool},
+  noplaybutton .default:n = {true},
 
   activate .choice:,
   activate / pagevisible .code:n = {\tl_gset:Nn\g_mix_pkgact_tl{/PV}},
@@ -358,6 +366,7 @@
   \box_clear:N\l_mix_poster_box
   \tl_clear:N\l_mix_scripts_tl
   \bool_gset_eq:NN\g_mix_usrdraft_bool\g_mix_pkgdraft_bool
+  \bool_gset_eq:NN\g_mix_usrpbtn_bool\g_mix_pkgpbtn_bool
   \seq_gclear:N\g_mix_res_seq
   \seq_gclear:N\g_mix_script_seq
   \int_gzero:N\g_mix_resizeflag_int
@@ -528,7 +537,7 @@
       \pdfcatalog{/AcroForm~<</Fields~[]/NeedAppearances~true>>}
       \tl_gset:cn{Acro@Form@added}{}
     }
-  }  
+  }
 }{
   \int_new:N\g_mix_obj_int % object ID
   \bool_if:NTF\g_mix_dvipdfmx_bool{ %dvipdfmx/XeTeX
@@ -616,7 +625,7 @@
           /AcroForm~<</Fields~[]/NeedAppearances~true>>>>}
         \tl_gset:cn{Acro@Form@added}{}
       }
-    }  
+    }
   }{
     % dvips
     \bool_new:N\g_mix_powerdot_bool %to cope with some powerdot oddity
@@ -895,7 +904,7 @@
         }
         \tl_gset:cn{Acro@Form@added}{}
       }
-    }  
+    }
   }
 }
 
@@ -1133,6 +1142,20 @@
 \int_new:N\l_mix_lineno_int
 
 \NewDocumentCommand\addmediapath{m}{\file_path_include:n{#1/}}
+
+%play button overlay
+\box_new:N\l_mix_pbtn_box
+\ExplSyntaxOff
+\def\g@mix@pbtn@tl{%
+  \tikz[opacity=.7,transparency group]{%
+    \useasboundingbox (-5,-5) rectangle (5,5);
+    \fill [color=gray,even odd rule] (0,0) circle (2.5)
+       (-0.95,1.4)--(-0.95,-1.4)--+(30:2.8)--cycle;
+    \fill [color=white] (-0.95,1.4)--(-0.95,-1.4)--+(30:2.8)--cycle;
+  }%
+}
+\ExplSyntaxOn
+\tl_set_eq:NN\g_mix_pbtn_tl\g@mix@pbtn@tl
 
 \ior_new:N\l_mix_vfile_stream %file stream for 3D views files
 \NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
@@ -1375,8 +1398,27 @@
         \box_use:N\l_mix_poster_box
       }
     }
-    \hbox_to_wd:nn{\l_mix_wd_tl}{
-      \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
+    \bool_if:NTF\g_mix_usrpbtn_bool{
+      %scale and insert play button overlay
+      \hbox_set:Nn\l_mix_pbtn_box{\g_mix_pbtn_tl}
+      \dim_compare:nTF{\l_mix_tt_tl>\l_mix_wd_tl}{
+        \box_resize_to_wd:Nn\l_mix_pbtn_box{\l_mix_wd_tl}
+      }{
+        \box_resize_to_ht_plus_dp:Nn\l_mix_pbtn_box{\l_mix_tt_tl}
+      }
+      \box_move_down:nn{\l_mix_dp_tl}{
+        \hbox_to_wd:nn{\l_mix_wd_tl}{
+          \hss
+          \vbox_to_ht:nn{\l_mix_tt_tl}{
+            \vss\box_use:N\l_mix_pbtn_box\vss
+          }
+          \hss
+        }
+      }
+    }{
+      \hbox_to_wd:nn{\l_mix_wd_tl}{
+        \vrule~width~\c_zero_dim~height~\l_mix_ht_tl~depth~\l_mix_dp_tl\hss
+      }
     }
     \int_gincr:N\g_mix_rmcnt_int
   }
@@ -1553,6 +1595,7 @@
 }
 
 \bool_new:N\g_mix_usrdraft_bool
+\bool_new:N\g_mix_usrpbtn_bool
 \bool_new:N\g_mix_opt_iiidview_bool
 \bool_new:N\l_mix_roo_bool
 \bool_new:N\g_mix_opt_ciiw_bool
@@ -1639,6 +1682,11 @@
   final / true .code:n = {\bool_gset_false:N\g_mix_usrdraft_bool},
   final / false .code:n = {\bool_gset_true:N\g_mix_usrdraft_bool},
   final .default:n = {true},
+
+  noplaybutton .choice:,
+  noplaybutton / true .code:n = {\bool_gset_false:N\g_mix_usrpbtn_bool},
+  noplaybutton / false .code:n = {\bool_gset_true:N\g_mix_usrpbtn_bool},
+  noplaybutton .default:n = {true},
 
   transparent .choice_code:n = {\tl_gset:Nx\g_mix_transp_tl{\l_keys_choice_tl}},
   transparent .generate_choices:n = {true,false},
