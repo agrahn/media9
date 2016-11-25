@@ -1,4 +1,4 @@
-#The media9 LaTeX Package
+#The `media9` LaTeX Package
 
 © 2016 Alexander Grahn
 
