@@ -16,6 +16,7 @@
 % Supported workflows:
 %
 %   pdflatex
+%   lualatex
 %   latex-->dvips-->ps2pdf/Distiller
 %   latex-->dvipdfmx
 %   xelatex
@@ -38,7 +39,7 @@
 \RequirePackage{xparse}
 \RequirePackage{l3keys2e}
 
-\def\g@mix@date@tl{2012/03/13}
+\def\g@mix@date@tl{2012/03/14}
 \def\g@mix@version@tl{0.2}
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9 compatible media}
@@ -76,11 +77,13 @@
 %testing for PDF output
 \bool_new:N\g_mix_pdfoutput_bool
 \bool_gset_false:N\g_mix_pdfoutput_bool
+\cs_if_exist:NT\pdfoutput{
+  \int_compare:nT{\pdfoutput>0}{\bool_gset_true:N\g_mix_pdfoutput_bool}
+}
 \pdftex_if_engine:T{
   \int_compare:nT{\pdftexversion<130}{
     \msg_interrupt:xxx{media9~error}{pdfTeX,~version~>=~1.30~required.}{}
-  }    
-  \int_compare:nT{\pdfoutput>0}{\bool_gset_true:N\g_mix_pdfoutput_bool}
+  }
 }
 
 %package options
@@ -221,19 +224,26 @@
   Loine~\msg_line_number: :~
   File~`#1'~not~found.}{Make~sure~file~`#1'~exists~and~is~readable!}
 
+\luatex_if_engine:T{\RequirePackage{pdftexcmds}}
 %\pdfmdfivesum is used for hashing object references of embedded files based
 %on their MD5 digest (in order to avoid multiple inclusion); if it is not
 %available, hashing will be based on the file name
 \cs_if_exist:NTF\pdfmdfivesum{
   \cs_new:Nn\mix_filemdfivesum:n{\pdfmdfivesum~file~{#1}}
 }{
-  \cs_new:Nn\mix_filemdfivesum:n{#1}
+  \luatex_if_engine:TF{
+    \cs_new:Nn\mix_filemdfivesum:n{\pdf@filemdfivesum{#1}}
+  }{
+    \cs_new:Nn\mix_filemdfivesum:n{#1}
+  }
 }
 
-\cs_if_exist:NTF\pdfescapestring{
-  \cs_new:Nn\mix_escapestring:n{\pdfescapestring{#1}}
+\cs_if_exist:NTF\pdfunescapehex{
+  \cs_new:Nn\mix_unescapehex:n{(\pdfunescapehex{#1})}
 }{
-  \cs_new:Nn\mix_escapestring:n{#1}
+  \luatex_if_engine:T{ %\pdf@unescapehex doesn't work correctly
+    \cs_new:Nn\mix_unescapehex:n{<#1>}
+  }
 }
 
 %reset various variables for every new media inclusion
@@ -370,8 +380,8 @@
   }
 
   \cs_new:Nn\mix_ndname:n{%#1:HEX encoded string
-    %converted to binary UTF16BE using \pdfunescapehex
-    \tl_set:Nn\l_mix_ndname_tl{(\pdfunescapehex{#1})}
+    %converted to binary UTF16BE using \pdfunescapehex (pdfTeX only)
+    \tl_set:Nn\l_mix_ndname_tl{\mix_unescapehex:n{#1}}
   }
 }{
   \int_new:N\g_mix_obj_int % object ID
@@ -560,7 +570,7 @@
     }
 
     \cs_new:Nn\mix_pdfxform:n{%#1:savebox number
-      %mark bbox of box
+      %mark bbox of box#1
       \hbox_set:Nn\l_tmpa_box{
         \box_move_down:nn{\box_dp:N #1}{
           \hbox_to_zero:n{
@@ -1620,7 +1630,7 @@
     }
     \tl_set:Nn\l_mix_level_tl{\c_zero}
     \tl_set:Nn\l_mix_cscount_tl{\c_zero}
-    \tl_set:Nx\l_mix_xname_tl{\mix_escapestring:n{#1}} %optional name of the view
+    \tl_set:Nx\l_mix_xname_tl{#1}%optional name of the view
     %reset 3D settings to defaults
     \mix_iiidreset:
   },
@@ -1746,7 +1756,7 @@
     \bool_set_true:N\l_mix_blankndname_bool
     \bool_set:Nn\l_mix_blankndname_bool{\tl_if_blank_p:o{#1}}
     \tl_set:Nn\l_mix_level_tl{\c_one}
-    \tl_set:Nn\l_mix_ndname_tl{(\mix_escapestring:n{#1})} %part (=node) name
+    \tl_set:Nn\l_mix_ndname_tl{(#1)} %part (=node) name
     \tl_set_eq:NN\l_mix_partlineno_int\l_mix_lineno_int
     %default part settings
     \tl_set:Nn\l_mix_ndop_tl{} %opacity
@@ -1867,9 +1877,7 @@
         }
         \int_incr:N\l_mix_viewcnt_int
         \tl_if_blank:VT\l_mix_xname_tl{
-          \tl_set:Nx\l_mix_xname_tl{
-            \mix_escapestring:n{View~\int_use:N\l_mix_viewcnt_int}
-          }
+          \tl_set:Nx\l_mix_xname_tl{View~\int_use:N\l_mix_viewcnt_int}
         }
         \mix_view:n{\l_mix_xname_tl}
         \tl_put_right:Nx\l_mix_iiidviewarray_tl{~\g_mix_pdflastobj_tl}
@@ -1903,7 +1911,7 @@
           }
           \tl_put_right:Nx\l_mix_saarray_tl{~\g_mix_pdflastobj_tl}
           \tl_set:Nn\l_mix_cscount_tl{\c_one}
-        }  
+        }
         \tl_set:Nn\l_mix_level_tl{\c_zero}
       }
     }{
