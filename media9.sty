@@ -43,8 +43,8 @@
 \RequirePackage{atenddvi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2015/01/21}
-\def\g@mix@version@tl{0.49}
+\def\g@mix@date@tl{2015/02/24}
+\def\g@mix@version@tl{0.50}
 
 \def\g@mix@liiikerneldate{2014/07/20}
 \def\g@mix@liiipkgdate{2014/07/20}
@@ -393,8 +393,8 @@
 
 \cs_gset:Nn\mix_keytoaux_now:nn{
   \iow_now:Nx\@auxout{\token_to_str:N\mix@newkey{#1}{#2}}
-  \bool_if:nF{
-    \cs_if_exist_p:c{#1} && \str_if_eq_x_p:nn{\tl_use:c{#1}}{#2}
+  \bool_if:nT{
+    !\cs_if_exist_p:c{#1} || !\str_if_eq_x_p:nn{\tl_use:c{#1}}{#2}
   }{
     \cs_if_exist:NF\g_mix_rerunwarned_tl{
       \tl_new:N\g_mix_rerunwarned_tl
@@ -594,17 +594,17 @@
   %helper func to remove `0 R' part from pdf obj reference
   \cs_new:Npn\mix_reftonum:w #1~0~R {#1}
   \cs_new:Nn\mix_pdfobj:nnn{
-    % #1:objref; if empty, a new object number will be reserved
-    % #2:type of object (dict|array|stream|fstream)
-    % #3:content (key-value, file, string); may be empty
+    % #1: predefined obj ref to be used with the current obj; may be empty
+    % #2: type of object (dict|array|stream|fstream)
+    % #3: content (key-value, file, string); if #3 && #1 are both empty, an
+    % object reference will be reserved for later use
     \tl_clear:N\l_mix_usenum_tl
-    \tl_if_blank:oTF{#1}{
-      \pdfobj~reserveobjnum
-      \tl_set:Nx\l_mix_usenum_tl{useobjnum~\the\pdflastobj}
-    }{
+    \tl_if_blank:oF{#1}{
       \tl_set:Nx\l_mix_usenum_tl{useobjnum~\exp_after:wN \mix_reftonum:w #1}
     }
-    \tl_if_blank:oF{#3}{
+    \bool_if:nTF{\tl_if_blank_p:o{#1}&&\tl_if_blank_p:o{#3}}{
+      \pdfobj~reserveobjnum
+    }{
       \str_case:nnn{#2}{
         {dict}{\immediate\pdfobj~\l_mix_usenum_tl~{<<#3>>}}
         {array}{\immediate\pdfobj~\l_mix_usenum_tl~{[#3]}}
@@ -612,17 +612,21 @@
         {fstream}{\immediate\pdfobj~\l_mix_usenum_tl~stream~file~{#3}}
       }{}
     }
-    \tl_gset:Nx\g_mix_pdflastobj_tl{\int_use:c{pdflastobj}~0~R}
+    \tl_gset:Nx\g_mix_pdflastobj_tl{\the\pdflastobj\space 0~R}
   }
 
   \cs_new:Nn\mix_pdfannot:nnnn{
     % #1:width, #2:height, #3:depth, #4:content (key-value)
-    \immediate\pdfannot~width~#1~height~#2~depth~#3 {#4}
+    \immediate\pdfannot~width~#1~height~#2~depth~#3 {
+      #4\cs_if_exist_use:N\fxocg@insert@OC
+    }
     \tl_gset:Nx\g_mix_pdflastann_tl{\int_use:c{pdflastannot}~0~R}
   }
 
   \cs_new:Nn\mix_pdflink:nn{% #1:dict, #2:text
-    \immediate\pdfstartlink~user~{#1}#2\pdfendlink
+    \immediate\pdfstartlink~user~{
+      #1\cs_if_exist_use:N\fxocg@insert@OC
+    }#2\pdfendlink
   }
 
   \cs_new:Nn\mix_pdfxform:n{%#1:savebox number
@@ -686,32 +690,28 @@
   \int_new:N\g_mix_obj_int % object ID
   \bool_if:NTF\g_mix_dvipdfmx_bool{ %dvipdfmx/XeTeX
     \cs_new:Nn\mix_pdfobj:nnn{
-      % #1:objref; if empty, a new object number will be reserved
-      % #2:type of object (dict|array|stream|fstream)
-      % #3:content (key-value, file, string); may be empty
-      \tl_clear:N\l_mix_usenum_tl
+      % #1: predefined obj ref to be used with the current obj; may be empty
+      % #2: type of object (dict|array|stream|fstream)
+      % #3: content (key-value, file, string); if #3 && #1 are both empty, an
+      % object reference will be reserved for later use
       \tl_if_blank:oTF{#1}{
-        \str_case:nnn{#2}{
-          {dict}{\special{pdf:obj~@mix@obj\int_use:N\g_mix_obj_int\space<<>>}}
-          {array}{\special{pdf:obj~@mix@obj\int_use:N\g_mix_obj_int\space[]}}
-          {stream}{\special{pdf:stream~@mix@obj\int_use:N\g_mix_obj_int\space(#3)}}
-          {fstream}{
-            \message{<#3>}
-            \special{pdf:fstream~@mix@obj\int_use:N\g_mix_obj_int\space(#3)}
-          }
-        }{}
         \tl_set:Nx\l_mix_usenum_tl{@mix@obj\int_use:N\g_mix_obj_int}
         \int_gincr:N\g_mix_obj_int
-      }{
+      }{  
         \tl_set:Nx\l_mix_usenum_tl{#1}
       }
       \tl_if_blank:oF{#3}{
         \str_case:nnn{#2}{
-          {dict}{\special{pdf:put~\l_mix_usenum_tl\space<<#3>>}}
-          {array}{\special{pdf:put~\l_mix_usenum_tl\space#3}}
+          {dict}{\special{pdf:obj~\l_mix_usenum_tl\space<<#3>>}}
+          {array}{\special{pdf:obj~\l_mix_usenum_tl\space[#3]}}
+          {stream}{\special{pdf:stream~\l_mix_usenum_tl\space(#3)}}
+          {fstream}{
+            \message{<#3>}
+            \special{pdf:fstream~\l_mix_usenum_tl\space(#3)}
+          }
         }{}
       }
-      \tl_gset:Nx\g_mix_pdflastobj_tl{\l_mix_usenum_tl}
+      \tl_gset_eq:NN\g_mix_pdflastobj_tl\l_mix_usenum_tl
     }
 
     \cs_new:Nn\mix_pdfannot:nnnn{
@@ -719,14 +719,16 @@
       \special{pdf:ann~@mix@obj\int_use:N\g_mix_obj_int\space
         width~#1\space
         height~#2\space
-        depth~#3~<<#4>>
+        depth~#3~<<#4\cs_if_exist_use:N\fxocg@insert@OC>>
       }
       \tl_gset:Nx\g_mix_pdflastann_tl{@mix@obj\int_use:N\g_mix_obj_int}
       \int_gincr:N\g_mix_obj_int
     }
 
     \cs_new:Nn\mix_pdflink:nn{% #1:dict, #2:text
-      \special{pdf:bann~<<#1>>}#2\special{pdf:eann}
+      \special{pdf:bann~<<
+        #1\cs_if_exist_use:N\fxocg@insert@OC
+      >>}#2\special{pdf:eann}
     }
 
     \cs_new:Nn\mix_pdfxform:n{%#1:savebox number
@@ -828,20 +830,27 @@
     \AtEndDvi{\special{ps:\g_mix_dpiwarning_tl}}
 
     \cs_new:Nn\mix_pdfobj:nnn{
-      % #1:objref; if empty, a new object number will be reserved
-      % #2:type of object (dict|array|stream|fstream)
-      % #3:content (key-value, file, string); may be empty
+      % #1: predefined obj ref to be used with the current obj; may be empty
+      % #2: type of object (dict|array|stream|fstream)
+      % #3: content (key-value, file, string); if #3 && #1 are both empty, an
+      % object reference will be reserved for later use
       \tl_clear:N\l_mix_usenum_tl
       \tl_if_blank:oTF{#1}{
+        \tl_set:Nx\l_mix_usenum_tl{{mix@obj\int_use:N\g_mix_obj_int}}
+        \int_gincr:N\g_mix_obj_int
+      }{
+        \tl_set:Nx\l_mix_usenum_tl{#1}
+      }
+      \tl_if_blank:oF{#3}{
         \bool_if:nTF{
           \g_mix_pkgbigfiles_bool &&
           \str_if_eq_p:nn{#2}{fstream}
         }{
           \iow_now:Nx\g_mix_mstreams_stream{
-            M9D~begin~o{mix@obj\int_use:N\g_mix_obj_int}O
+            M9D~begin~o\l_mix_usenum_tl O
           }
         }{
-          \special{ps:~mark~/_objdef~{mix@obj\int_use:N\g_mix_obj_int}~/type
+          \special{ps:~mark~/_objdef~\l_mix_usenum_tl\space/type
             \str_case:nnn{#2}{
               {dict}{/dict}
               {array}{/array}
@@ -851,12 +860,6 @@
             /OBJ~pdfmark~
           }
         }
-        \tl_set:Nx\l_mix_usenum_tl{{mix@obj\int_use:N\g_mix_obj_int}}
-        \int_gincr:N\g_mix_obj_int
-      }{
-        \tl_set:Nx\l_mix_usenum_tl{#1}
-      }
-      \tl_if_blank:oF{#3}{
         \str_case:nnn{#2}{
           {dict}{\special{ps:~mark~\l_mix_usenum_tl~<<#3>>/PUT~pdfmark~}}
           {array}{
@@ -902,7 +905,7 @@
           }
         }{}
       }
-      \tl_gset:Nx\g_mix_pdflastobj_tl{\l_mix_usenum_tl}
+      \tl_gset_eq:NN\g_mix_pdflastobj_tl\l_mix_usenum_tl
     }
 
     \cs_new:Nn\mix_pdfannot:nnnn{
@@ -927,7 +930,7 @@
         mark~
           /_objdef~{mix@obj\int_use:N\g_mix_obj_int}
           /Rect~[mix@llx~mix@lly~mix@urx~mix@ury]
-          #4~
+          #4\cs_if_exist_use:N\fxocg@insert@OC
         /ANN~pdfmark~
       }
       \tl_gset:Nx\g_mix_pdflastann_tl{{mix@obj\int_use:N\g_mix_obj_int}}
@@ -936,14 +939,18 @@
 
     \cs_new:Nn\mix_pdflink:nn{% #1:dict, #2:text
       \cs_if_exist:NTF\pdfmark{
-        \pdfmark[#2]{pdfmark=/ANN,Raw={#1}}
+        \pdfmark[#2]{pdfmark=/ANN,Raw={
+          #1\cs_if_exist_use:N\fxocg@insert@OC
+        }}
       }{
         \hbox_set:Nn\l_tmpb_box{#2}
         \mix_pdfannot:nnnn{
           \box_wd:N\l_tmpb_box}{
           \box_ht:N\l_tmpb_box}{
           \box_dp:N\l_tmpb_box
-        }{#1}
+        }{
+          #1\cs_if_exist_use:N\fxocg@insert@OC
+        }
         \box_use_clear:N\l_tmpb_box
       }
     }
@@ -1078,33 +1085,7 @@
   }
   \filename@parse{#1}
   \tl_set:Nx\l_mix_base_tl{\filename@base}
-  \tl_set:Nx\l_mix_ext_tl{\filename@ext}
-  \tl_replace_all:Nnn\l_mix_ext_tl{A}{a}
-  \tl_replace_all:Nnn\l_mix_ext_tl{B}{b}
-  \tl_replace_all:Nnn\l_mix_ext_tl{C}{c}
-  \tl_replace_all:Nnn\l_mix_ext_tl{D}{d}
-  \tl_replace_all:Nnn\l_mix_ext_tl{E}{e}
-  \tl_replace_all:Nnn\l_mix_ext_tl{F}{f}
-  \tl_replace_all:Nnn\l_mix_ext_tl{G}{g}
-  \tl_replace_all:Nnn\l_mix_ext_tl{H}{h}
-  \tl_replace_all:Nnn\l_mix_ext_tl{I}{i}
-  \tl_replace_all:Nnn\l_mix_ext_tl{J}{j}
-  \tl_replace_all:Nnn\l_mix_ext_tl{K}{k}
-  \tl_replace_all:Nnn\l_mix_ext_tl{L}{l}
-  \tl_replace_all:Nnn\l_mix_ext_tl{M}{m}
-  \tl_replace_all:Nnn\l_mix_ext_tl{N}{n}
-  \tl_replace_all:Nnn\l_mix_ext_tl{O}{o}
-  \tl_replace_all:Nnn\l_mix_ext_tl{P}{p}
-  \tl_replace_all:Nnn\l_mix_ext_tl{Q}{q}
-  \tl_replace_all:Nnn\l_mix_ext_tl{R}{r}
-  \tl_replace_all:Nnn\l_mix_ext_tl{S}{s}
-  \tl_replace_all:Nnn\l_mix_ext_tl{T}{t}
-  \tl_replace_all:Nnn\l_mix_ext_tl{U}{u}
-  \tl_replace_all:Nnn\l_mix_ext_tl{V}{v}
-  \tl_replace_all:Nnn\l_mix_ext_tl{W}{w}
-  \tl_replace_all:Nnn\l_mix_ext_tl{X}{x}
-  \tl_replace_all:Nnn\l_mix_ext_tl{Y}{y}
-  \tl_replace_all:Nnn\l_mix_ext_tl{Z}{z}
+  \tl_set:Nx\l_mix_ext_tl{\tl_lower_case:n{\filename@ext}}
   \bool_if:NTF\l_mix_url_bool{
     \cs_if_exist:cF{url_#1}{
       \mix_pdfobj:nnn{}{dict}{/FS/URL/F(#1)}
@@ -1300,7 +1281,7 @@
         }{
           %\hbox_set:Nn#1{
           %  \resizebox*{\g_mix_wd_tl}{\g_mix_tt_tl}{\box_use_clear:N#1}}
-          \box_resize:Nnn#1{\g_mix_wd_tl}{\g_mix_tt_tl}  
+          \box_resize:Nnn#1{\g_mix_wd_tl}{\g_mix_tt_tl}
         }
       }
       {\c_six}{
