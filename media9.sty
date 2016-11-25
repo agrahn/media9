@@ -26,7 +26,7 @@
 % conditions of the LaTeX Project Public License, either version 1.3
 % of this license or (at your option) any later version.
 % The latest version of this license is in
-%   http://www.latex-project.org/lppl.txt
+%   http://mirrors.ctan.org/help/Catalogue/licenses.lppl.html
 % and version 1.3 or later is part of all distributions of LaTeX
 % version 2005/12/01 or later.
 %
@@ -42,8 +42,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2014/02/06}
-\def\g@mix@version@tl{0.39}
+\def\g@mix@date@tl{2014/03/06}
+\def\g@mix@version@tl{0.41}
 
 \def\g@mix@liiikerneldate{2013/07/28}
 \def\g@mix@liiipkgdate{2013/07/28}
@@ -468,20 +468,55 @@
 }
 \group_end:
 
-%takes Field object refs
-\tl_if_exist:cF{@anim@fields}{\tl_gset:cn{@anim@fields}{}}
-%macro for adding AcroForm entry to PDF Catalog
-\cs_new:Nn\mix_insert_acroform:{
+%macros for adding AcroForm and OCProperties dicts to PDF Catalog
+\tl_if_exist:cF{@anim@fields}{\tl_gset:cn{@anim@fields}{}}%takes Field object refs
+\cs_new:Nn\mix_insert_acroform:{    %AcroForm dict
   \tl_if_exist:cF{Acro@Form@added}{
     \mix_pdfobj:nnn{}{array}{}
     \tl_gset:Nx\g_mix_fieldsarray_tl{\g_mix_pdflastobj_tl}
     \mix_pdfcatalog:n{
-      /AcroForm~<</Fields~\g_mix_fieldsarray_tl/NeedAppearances~true>>}
-    \AtEndDocument{%
+      /AcroForm~<</Fields~\g_mix_fieldsarray_tl/NeedAppearances~false>>}
+    \AtEndDocument{
       \mix_pdfobj:nnn{\g_mix_fieldsarray_tl}{array}{\@anim@fields}
     }
     \tl_gset:cn{Acro@Form@added}{}
   }
+}
+
+\tl_if_exist:cF{@anim@ocgs}{\tl_gset:cn{@anim@ocgs}{}} %takes ocg object refs
+\tl_if_exist:cF{@anim@offocgs}{\tl_gset:cn{@anim@offocgs}{}}
+\cs_new:Nn\mix_insert_ocprops:{%OCProperties dict
+  \tl_if_exist:cF{oc@props@added}{
+    \mix_pdfobj:nnn{}{array}{}
+    \tl_gset:Nx\g_mix_ocgarray_tl{\g_mix_pdflastobj_tl}
+    \mix_pdfobj:nnn{}{array}{}
+    \tl_gset:Nx\g_mix_offocgarray_tl{\g_mix_pdflastobj_tl}
+    \mix_pdfcatalog:n{
+      /OCProperties~<<
+        /OCGs~\g_mix_ocgarray_tl
+        /D~<<
+          /BaseState/ON~/OFF~\g_mix_offocgarray_tl
+        >>
+      >>
+    }
+    \AtEndDocument{
+      \mix_pdfobj:nnn{\g_mix_ocgarray_tl}{array}{\@anim@ocgs}
+      \mix_pdfobj:nnn{\g_mix_offocgarray_tl}{array}{\@anim@offocgs}
+    }
+    \tl_gset:cn{oc@props@added}{}
+  }
+}
+\cs_new:Nn\mix_insert_btnocg:{%OCG for play button overlay
+  \tl_if_exist:NF\g_mix_btnocg_tl{
+    \mix_pdfobj:nnn{}{dict}{
+      /Type/OCG/Name~(MediaPlayButton)
+      /Usage<</Print<</PrintState/OFF>>/Export<</ExportState/OFF>>>>
+    }
+    \tl_gput_right:Nx\@anim@ocgs{\space\g_mix_pdflastobj_tl}
+    \tl_gput_right:Nx\@anim@offocgs{\space\g_mix_pdflastobj_tl}
+    \tl_gset:Nx\g_mix_btnocg_tl{\g_mix_pdflastobj_tl}
+  }
+  \mix_pdfresources:n{/Properties<</OC@rm@play\space\g_mix_btnocg_tl>>}
 }
 
 %commands for creating PDF objects, annots etc.
@@ -548,6 +583,14 @@
   }
 
   \cs_new:Nn\mix_pdfcatalog:n{\pdfcatalog{#1}}
+  \cs_new:Nn\mix_pdfresources:n{
+    \group_begin:
+    \tl_set:Nx\l_mix_temp_tl{\group_end:
+      \global\pdfpageresources{\the\pdfpageresources #1}
+    }\l_mix_temp_tl
+  }
+  \cs_new:Nn\mix_pdfbdc:{\pdfliteral{/OC/OC@rm@play~BDC}}
+  \cs_new:Nn\mix_pdfemc:{\pdfliteral{EMC}}
 }{
   \int_new:N\g_mix_obj_int % object ID
   \bool_if:NTF\g_mix_dvipdfmx_bool{ %dvipdfmx/XeTeX
@@ -630,6 +673,9 @@
     }
 
     \cs_new:Nn\mix_pdfcatalog:n{\special{pdf:put~@catalog~<<#1>>}}
+    \cs_new:Nn\mix_pdfresources:n{\special{pdf:put~@resources~<<#1>>}}
+    \cs_new:Nn\mix_pdfbdc:{\special{pdf:~content~/OC/OC@rm@play~BDC}}
+    \cs_new:Nn\mix_pdfemc:{\special{pdf:~content~EMC}}
   }{
     % dvips
     \bool_new:N\g_mix_powerdot_bool %to cope with some powerdot oddity
@@ -903,6 +949,10 @@
     \cs_new:Nn\mix_pdfcatalog:n{
       \special{ps:~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
     }
+
+    \cs_new:Nn\mix_pdfresources:n{} %no-op
+    \cs_new:Nn\mix_pdfbdc:{\special{ps:~mark~/OC~\g_mix_btnocg_tl~/BDC~pdfmark}}
+    \cs_new:Nn\mix_pdfemc:{\special{ps:~mark~/EMC~pdfmark}}
   }
 }
 
@@ -1202,7 +1252,13 @@
     \tl_if_empty:NF\g_mix_usrlabel_tl{
       \mix_keytoaux_now:nn{ann@\g_mix_usrlabel_tl}{draft}
     }
-    \mix_draftbox:n{\tl_to_str:n{#3}}
+    \tl_if_blank:oTF{#2}{
+      \mix_draftbox:n{\tl_to_str:n{#3}}
+    }{
+      \box_move_down:nn{\l_mix_dp_tl-\box_dp:N\l_mix_poster_box}{
+        \box_use:N\l_mix_poster_box
+      }
+    }
   }{
     %embed main asset
     \mix_uribegin:
@@ -1394,25 +1450,40 @@
       \mix_keytoaux_now:nn{ann@\g_mix_usrlabel_tl}{\g_mix_pdflastann_tl}
       \mix_keytoaux_shipout:nn{page@\g_mix_usrlabel_tl}{
         \noexpand\the\g@mix@page@int}
-      \mix_pdfobj:nnn{}{dict}{
-        /S/JavaScript/JS~(
-          if(typeof(annotRM)=='undefined'){annotRM=new~Array();}
-          if(typeof(annotRM['\g_mix_label_tl'])=='undefined'){
-            annotRM['\g_mix_label_tl']=
-              this.getAnnotRichMedia(this.pageNum,'\g_mix_label_tl');
-          }
-        )
-      }
-      \mix_pdfannot:nnnn{0pt}{0pt}{0pt}{
-        /Subtype/Widget
-        /FT/Btn/Ff~65537
-        /BS~<</W~0>>
-        /T~(fd@\g_mix_label_tl)
-        /AA~<</PO~\g_mix_pdflastobj_tl~/PV~\g_mix_pdflastobj_tl>>
-      }
-      \tl_gput_right:Nx\@anim@fields{\g_mix_pdflastann_tl\space}
-      \mix_insert_acroform:
     }
+    \mix_pdfobj:nnn{}{dict}{
+      /S/JavaScript/JS~(
+        try{
+          var~ocgAll=this.getOCGs(this.pageNum);
+          for(var~i=0;i<ocgAll.length;i++){
+            if(
+              ocgAll[i].name=='MediaPlayButton'&&(
+                app.viewerType=='Reader'||
+                app.viewerType=='Exchange'||
+                app.viewerType=='Exchange-Pro'
+              )&&app.viewerVersion>=9
+            )ocgAll[i].state=true;
+          }
+          \tl_if_empty:NF\g_mix_usrlabel_tl{
+            if(typeof(annotRM)=='undefined'){annotRM=new~Array();}
+            if(typeof(annotRM['\g_mix_label_tl'])=='undefined'){
+              annotRM['\g_mix_label_tl']=
+                this.getAnnotRichMedia(this.pageNum,'\g_mix_label_tl');
+            }
+          }
+        }catch(e){}
+        this.dirty=false;
+      )
+    }
+    \mix_pdfannot:nnnn{0pt}{0pt}{0pt}{
+      /Subtype/Widget
+      /FT/Btn/Ff~65537
+      /BS~<</W~0>>
+      /T~(fd@\g_mix_label_tl)
+      /AA~<</PO~\g_mix_pdflastobj_tl~/PV~\g_mix_pdflastobj_tl>>
+    }
+    \tl_gput_right:Nx\@anim@fields{\space\g_mix_pdflastann_tl\space}
+    \mix_insert_acroform:
     \hbox_overlap_right:n{
       \box_move_down:nn{\l_mix_dp_tl-\box_dp:N\l_mix_poster_box}{
         \box_use:N\l_mix_poster_box
@@ -1420,6 +1491,8 @@
     }
     \bool_if:NTF\g_mix_usrpbtn_bool{
       %scale and insert play button overlay
+      \mix_insert_btnocg: %create OCG
+      \mix_insert_ocprops:
       \hbox_set:Nn\l_mix_pbtn_box{\g_mix_pbtn_tl}
       \dim_compare:nTF{\l_mix_tt_tl>\l_mix_wd_tl}{
         \box_resize_to_wd:Nn\l_mix_pbtn_box{\l_mix_wd_tl}
@@ -1430,7 +1503,11 @@
         \hbox_to_wd:nn{\l_mix_wd_tl}{
           \hss
           \vbox_to_ht:nn{\l_mix_tt_tl}{
-            \vss\box_use:N\l_mix_pbtn_box\vss
+            \vss
+            \mix_pdfbdc:
+            \box_use:N\l_mix_pbtn_box
+            \mix_pdfemc:
+            \vss
           }
           \hss
         }
@@ -2312,7 +2389,7 @@
 \keys_define:nn{media9/mbtn}{
   draft .code:n = {},
   final .code:n = {},
- 
+
   tooltip .tl_gset_x:N = \g_mix_tooltip_tl,
   tooltip .value_required:,
 
@@ -2516,7 +2593,12 @@
       /T~(mbtn@\int_use:N\g_mix_mbtncnt_int)
       \tl_if_empty:NF\g_mix_tooltip_tl{/TU~(\g_mix_tooltip_tl)}
       /FT/Btn/Ff~65536
-      /H/P
+      \tl_if_empty:NTF\g_mix_downbtn_tl{/H/I}{/H/P}
+      /AP~<<
+        /N~\g_mix_normalbtn_tl
+        \tl_if_empty:NF\g_mix_overbtn_tl{/R~\g_mix_overbtn_tl}
+        \tl_if_empty:NF\g_mix_downbtn_tl{/D~\g_mix_downbtn_tl}
+      >>
       /MK~<<
         /TP~1~/IF~<</S/A/FB~true/A~[0.0~0.0]>>
         /I~\g_mix_normalbtn_tl
