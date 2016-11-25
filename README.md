@@ -34,19 +34,11 @@ Otherwise, a manual install into the local TeX-Directory-Structure (TDS) root di
 
 1. Download the TDS compliant package file [`media9.tds.zip`](http://mirror.ctan.org/install/macros/latex/contrib/media9.tds.zip)
 
-2. Find the local TDS root directory by running
-````
-kpsewhich -var-value TEXMFLOCAL
-````
-on the command line.
+2. Find the local TDS root directory by running `kpsewhich -var-value TEXMFLOCAL` on the command line.
 
 3. Unzip media9.tds.zip into the local TDS root directory previously found. Depending on the location of this directory, you may need to be logged in as Root/Administrator.
 
-4. After installation, update the filename database by running
-````
-texhash
-````
-on the command line. Again, Root/Administrator privileges may be required.
+4. After installation, update the filename database by running `texhash` on the command line. Again, Root/Administrator privileges may be required.
 
 For updating the package, repeat the steps given above.
 
