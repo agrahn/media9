@@ -43,11 +43,11 @@
 \RequirePackage{atenddvi}
 \RequirePackage{tikz}
 
-\def\g@mix@date@tl{2014/06/25}
-\def\g@mix@version@tl{0.45}
+\def\g@mix@date@tl{2014/08/06}
+\def\g@mix@version@tl{0.46}
 
-\def\g@mix@liiikerneldate{2013/07/28}
-\def\g@mix@liiipkgdate{2013/07/28}
+\def\g@mix@liiikerneldate{2014/07/20}
+\def\g@mix@liiipkgdate{2014/07/20}
 
 \ProvidesExplPackage{media9}{\g@mix@date@tl}{\g@mix@version@tl}
 {acrobat-9/X compatible media}
@@ -141,9 +141,9 @@
 \cs_new:Npn\mix_parse_winsizearg:w#1x#2\q_stop{
   \str_if_eq:nnTF{#1}{default}{
     \tl_gset:Nx\tl_mix_fltwd{
-      \fp_to_int:n{1.522*\__dim_strip_bp:n{\g_mix_wd_tl}}}
+      \fp_to_int:n{1.522*\dim_to_decimal_in_bp:n{\g_mix_wd_tl}}}
     \tl_gset:Nx\tl_mix_fltht{
-      \fp_to_int:n{1.522*\__dim_strip_bp:n{\g_mix_tt_tl}}}
+      \fp_to_int:n{1.522*\dim_to_decimal_in_bp:n{\g_mix_tt_tl}}}
   }{
     \tl_gset:Nn\tl_mix_fltwd{#1}
     \tl_gset:Nn\tl_mix_fltht{#2}
@@ -1334,9 +1334,9 @@
     \tl_gset:Nx\g_mix_appearance_tl{\g_mix_pdflastxform_tl}
   }
   \mix_reset:
-  \mix_uribegin: %treat URI characters correctly
+  {\mix_uribegin: %treat URI characters correctly
   \keys_set:nn{media9/user}{#1}
-  \mix_uriend:
+  \mix_uriend:}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{~&}{&}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{&~}{&}
   \tl_greplace_all:Nnn\g_mix_flashvars_tl{~=}{=}
@@ -1386,7 +1386,7 @@
       \xetex_if_engine:T{\tl_gset:Nn\g_mix_usrpbtn_tl{plain}}
     }
     %embed main asset
-    \mix_uribegin:
+	{\mix_uribegin:
     \mix_embedasset:n{#3}
     \bool_if:nTF{
       \str_if_eq_p:Vn\l_mix_ext_tl{prc}||\str_if_eq_p:Vn\l_mix_ext_tl{u3d}
@@ -1403,7 +1403,7 @@
       }{\tl_gset:Nn\g_mix_mainassetsub_tl{Flash}}
     }
     \tl_gset:Nx\g_mix_mainasset_tl{~\g_mix_lastasset_tl}
-    \mix_uriend:
+    \mix_uriend:}
     %secondary assets (added by addresource)
     \seq_map_function:NN\g_mix_res_seq\mix_embedasset:n
     \seq_map_inline:Nn\g_mix_script_seq{
@@ -1468,7 +1468,11 @@
       /Asset~\g_mix_mainasset_tl
       \bool_if:NF\g_mix_iiid_bool{
         /Params~<<
-          /Binding/Foreground
+          /Binding\str_if_eq:VnTF\g_mix_transp_tl{true}{
+            /Foreground
+          }{
+            /Background
+          }
           \tl_if_blank:VF\g_mix_flashvars_tl{
             /FlashVars~(\g_mix_flashvars_tl)
           }
@@ -2723,10 +2727,10 @@
   \tl_gclear:N\g_mix_tooltip_tl
   %process options
   \bool_gset_eq:NN\g_mix_btndraft_bool\g_mix_pkgdraft_bool
-  \mix_uribegin: %treat URI characters correctly
+  {\mix_uribegin: %treat URI characters correctly
   \keys_set:nn{media9/mbtndraft}{#1} %detect draft/final on first pass
   \bool_if:NF\g_mix_btndraft_bool{\keys_set:nn{media9/mbtn}{#1}}
-  \mix_uriend:
+  \mix_uriend:}
   %normal button appearance
   \hbox_set:Nn\l_mix_poster_box{#2}
   \tl_set:Nx\width {\dim_use:N\box_wd:N\l_mix_poster_box}
