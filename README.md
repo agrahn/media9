@@ -12,8 +12,8 @@ This package is based on the RichMedia Annotation, an Adobe addition to the PDF 
 
 Supported PDF making workflows are:
 * pdfLaTeX, LuaLaTeX
-* (Lua)LaTeX --> dvips --> ps2pdf/Distiller
-* (Xe)LaTeX --> (x)dvipdfmx
+* (Lua)LaTeX &rArr; dvips &rArr; ps2pdf/Distiller
+* (Xe)LaTeX &rArr; (x)dvipdfmx
 
 The package was written in the new LaTeX3 syntax.
 
