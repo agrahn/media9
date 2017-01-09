@@ -1,3 +1,9 @@
+2017-01-09
+	* v0.71 : media9.sty
+	* v0.11 : pdfbase.sty
+	* fix: pdfbase.sty: support for `landscape' environment of
+	the pdflscape/lscape packages
+
 2016-11-08
 	* v0.70 : media9.sty
 	* v0.10 : pdfbase.sty

@@ -123,8 +123,8 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{atenddvi}
 
-\def\g@pbs@date@tl{2016/11/08}
-\def\g@pbs@version@tl{0.10}
+\def\g@pbs@date@tl{2017/01/09}
+\def\g@pbs@version@tl{0.11}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -439,6 +439,14 @@
     \bool_new:N\g_pbs_powerdot_bool %to cope with some powerdot oddity
     \@ifclassloaded{powerdot}{\bool_gset_true:N\g_pbs_powerdot_bool}{}
 
+    \bool_new:N\g_pbs_lscape_bool %if we are inside landscape env
+    \AtBeginDocument{
+      \cs_if_exist:NT\landscape{%
+        \tl_put_right:Nn\landscape{\bool_gset_true:N\g_pbs_lscape_bool}
+        \tl_put_left:Nn\endlandscape{\bool_gset_false:N\g_pbs_lscape_bool}
+      }
+    }
+
     \sys_if_engine_pdftex:TF{
       \cs_new_nopar:Nn\pbs_filesize:n{\pdffilesize{#1}}
       \cs_new_nopar:Nn\pbs_filedump:nnn{\pdffiledump~offset~#1~length~#2~{#3}}
@@ -658,7 +666,7 @@
         /origin@pbs@\int_use:N\g_pbs_obj_int~[currentpoint]~cvx~put~
         false~setglobal~
         %translate graphics to upper left page corner
-        \bool_if:NF\g_pbs_powerdot_bool{
+        \bool_if:nF{\g_pbs_powerdot_bool||\g_pbs_lscape_bool}{
           {
             pbs@llx~neg~pbs@ury~neg~translate~
             one@inch@x~DVImag~div~neg~one@inch@y~DVImag~div~neg~translate
