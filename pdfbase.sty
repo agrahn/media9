@@ -185,7 +185,7 @@
 %commands for creating PDF objects, annots etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \sys_if_output_pdf:TF{
-  %in LuaTeX-0.95.0, pdfTeX primitives got new names 
+  %in LuaTeX-0.95.0, pdfTeX primitives got new names
   \bool_if:nT{
     \sys_if_engine_luatex_p: && !\int_compare_p:n{\luatexversion<95}
   }{
