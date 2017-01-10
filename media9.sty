@@ -41,8 +41,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{atenddvi}
 
-\def\g@mix@date@tl{2017/01/09}
-\def\g@mix@version@tl{0.71}
+\def\g@mix@date@tl{2017/01/10}
+\def\g@mix@version@tl{0.72}
 
 \def\g@mix@liiikerneldate{2015/09/27}
 \def\g@mix@liiipkgdate{2015/09/27}
@@ -2182,16 +2182,16 @@
   tooltip .value_required:n = {true},
 
   overface .code:n = {
-    %\hbox_set:Nn\l_mix_poster_box{#1}
-    \sbox\l_mix_poster_box{#1}
+    \sbox\l_mix_poster_box{
+      \bool_if:NTF\g_pbs_lscape_bool{\rotatebox{90}{#1}}{#1}}
     \mix_pdfxform:n{\l_mix_poster_box}
     \tl_gset:Nx\g_mix_overbtn_tl{\mix_pdflastxform:}
   },
   overface .value_required:n = {true},
 
   downface .code:n = {
-    %\hbox_set:Nn\l_mix_poster_box{#1}
-    \sbox\l_mix_poster_box{#1}
+    \sbox\l_mix_poster_box{
+      \bool_if:NTF\g_pbs_lscape_bool{\rotatebox{90}{#1}}{#1}}
     \mix_pdfxform:n{\l_mix_poster_box}
     \tl_gset:Nx\g_mix_downbtn_tl{\mix_pdflastxform:}
   },
@@ -2377,6 +2377,8 @@
   \tl_set:Nx\height{\dim_use:N\box_ht:N\l_mix_poster_box}
   \tl_set:Nx\depth {\dim_use:N\box_dp:N\l_mix_poster_box}
   \bool_if:NTF\g_mix_btndraft_bool{\box_use:N\l_mix_poster_box}{
+    \sbox\l_mix_poster_box{\bool_if:NTF\g_pbs_lscape_bool{\rotatebox{90}{
+      \box_use:N\l_mix_poster_box}}{\box_use:N\l_mix_poster_box}}
     \mix_pdfxform:n{\l_mix_poster_box}
     \tl_set:Nx\g_mix_normalbtn_tl{\mix_pdflastxform:}
     \bool_if:nT{ %dummy Widget for ocgx2, AR seems to need it

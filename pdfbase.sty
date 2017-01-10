@@ -123,8 +123,8 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{atenddvi}
 
-\def\g@pbs@date@tl{2017/01/09}
-\def\g@pbs@version@tl{0.11}
+\def\g@pbs@date@tl{2017/01/10}
+\def\g@pbs@version@tl{0.12}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -161,6 +161,13 @@
 
 \bool_new:N\g_pbs_pkgbigfiles_bool
 \bool_new:N\g_pbs_dvipdfmx_bool
+\bool_new:N\g_pbs_lscape_bool %if we are inside landscape env
+\AtBeginDocument{
+  \cs_if_exist:NT\landscape{%
+    \tl_put_right:Nn\landscape{\bool_gset_true:N\g_pbs_lscape_bool}
+    \tl_put_left:Nn\endlandscape{\bool_gset_false:N\g_pbs_lscape_bool}
+  }
+}
 
 \keys_define:nn{pdfbase}{
   xetex .bool_gset:N = \g_pbs_dvipdfmx_bool,
@@ -355,12 +362,22 @@
       }
       \tl_gset_eq:NN\g_pbs_pdflastobj_tl\l_pbs_usenum_tl
     }
-
     \cs_new_nopar:Nn\pbs_pdfannot:nnnn{
-      \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
-        width~\dim_eval:n{#1}\space
-        height~\dim_eval:n{#2}\space
+      \bool_if:NTF\g_pbs_lscape_bool{
+        %fix missing annotation rotation of (x)dvipdfmx on landscape pages
+        \box_move_up:nn{\dim_eval:n{#2}}{\vbox:n{
+          \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
+            width~\dim_eval:n{#2+#3}\space
+            height~\dim_eval:n{#1}\space
+            depth~\dim_eval:n{\c_zero_dim}~<<#4>>
+          }
+        }}
+      }{
+        \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
+          width~\dim_eval:n{#1}\space
+          height~\dim_eval:n{#2}\space
           depth~\dim_eval:n{#3}~<<#4>>
+        }
       }
       \tl_gset:Nx\g_pbs_pdflastann_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
       \int_gincr:N\g_pbs_obj_int
@@ -438,14 +455,6 @@
     %dvips
     \bool_new:N\g_pbs_powerdot_bool %to cope with some powerdot oddity
     \@ifclassloaded{powerdot}{\bool_gset_true:N\g_pbs_powerdot_bool}{}
-
-    \bool_new:N\g_pbs_lscape_bool %if we are inside landscape env
-    \AtBeginDocument{
-      \cs_if_exist:NT\landscape{%
-        \tl_put_right:Nn\landscape{\bool_gset_true:N\g_pbs_lscape_bool}
-        \tl_put_left:Nn\endlandscape{\bool_gset_false:N\g_pbs_lscape_bool}
-      }
-    }
 
     \sys_if_engine_pdftex:TF{
       \cs_new_nopar:Nn\pbs_filesize:n{\pdffilesize{#1}}

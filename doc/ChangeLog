@@ -1,3 +1,9 @@
+2017-01-10
+	* v0.72 : media9.sty
+	* v0.12 : pdfbase.sty
+	* fix: pdfbase.sty, media9.sty: `landscape' environment:
+	drivers XeTeX and dvipdfmx also supported
+
 2017-01-09
 	* v0.71 : media9.sty
 	* v0.11 : pdfbase.sty
