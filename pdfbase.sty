@@ -632,6 +632,7 @@
       }{
         \msg_warning:nn{pdfbase}{content~too~large}
       }
+      %\hbox_set:Nn#3{\scalebox{0.1}{\box_use_clear:N#3}}
       %mark bbox of box#3
       \group_begin:
         \dim_set:Nn\unitlength{1pt}
@@ -665,15 +666,9 @@
         }
         \end{picture}
       \group_end:
-      \tl_gset:cx{origin:{pbs@obj\int_use:N\g_pbs_obj_int}}{
-        origin@pbs@\int_use:N\g_pbs_obj_int
-      }
       \special{ps:~
         gsave~
-        %keep a record of lower left corner coordinates
-        true~setglobal~globaldict~
-        /origin@pbs@\int_use:N\g_pbs_obj_int~[currentpoint]~cvx~put~
-        false~setglobal~
+        currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
         %translate graphics to upper left page corner
         \bool_if:nF{\g_pbs_powerdot_bool||\g_pbs_lscape_bool}{
           {
@@ -682,10 +677,14 @@
           }?pdfmark~
         }
         %distill graphics into XObject
-        mark~
+        gsave~pbs@curx~pbs@cury~translate~ %move origin (0,0) to the current
+        mark~                              %position
           /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
-          /BBox~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
-        /BP~pdfmark~
+          /BBox~[
+            pbs@llx~pbs@curx~sub~pbs@lly~pbs@cury~sub~
+            pbs@urx~pbs@curx~sub~pbs@ury~pbs@cury~sub
+          ]
+        /BP~pdfmark~grestore~
         \int_compare:nT{#2>\c_zero}{
           %operations needed if used as annotation appearance
           {
@@ -735,13 +734,7 @@
     }
 
     \cs_new_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
-      \special{ps:~
-        gsave~
-        currentpoint~pop~\tl_use:c{origin:#1}~pop~sub~
-        currentpoint~exch~pop~\tl_use:c{origin:#1}~exch~pop~sub~translate~
-        mark~#1~/SP~pdfmark~
-        grestore~
-      }
+      \special{ps:~gsave~currentpoint~translate~mark~#1~/SP~pdfmark~grestore~}
     }
 
     \cs_new_nopar:Nn\pbs_pdfximage:n{
