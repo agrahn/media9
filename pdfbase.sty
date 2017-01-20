@@ -453,8 +453,12 @@
     \cs_new_nopar:Nn\pbs_pdfemc:{\special{pdf:~code~EMC}}
   }{
     %dvips
-    \bool_new:N\g_pbs_powerdot_bool %to cope with some powerdot oddity
-    \@ifclassloaded{powerdot}{\bool_gset_true:N\g_pbs_powerdot_bool}{}
+    \RequirePackage{eso-pic}
+    \AddToShipoutPicture{\AtPageUpperLeft{\box_use_clear:N\g_pbs_distill_box}}
+    \box_new:N\g_pbs_distill_box
+
+%    \bool_new:N\g_pbs_powerdot_bool %to cope with some powerdot oddity
+%    \@ifclassloaded{powerdot}{\bool_gset_true:N\g_pbs_powerdot_bool}{}
 
     \sys_if_engine_pdftex:TF{
       \cs_new_nopar:Nn\pbs_filesize:n{\pdffilesize{#1}}
@@ -483,8 +487,8 @@
 
     \bool_if:NT\g_pbs_pkgbigfiles_bool{
       \special{psfile=\jobname.pbsdat}
-      %open auxiliary file \jobname.pbsdat for writing hex encoded streams of the
-      %files to be embedded. This file is inserted into PS during dvips run
+      %open auxiliary file \jobname.pbsdat for writing hex encoded streams of
+      %the files to be embedded. This file is inserted into PS during dvips run
       \iow_new:N\g_pbs_mstreams_stream
       \iow_open:Nn\g_pbs_mstreams_stream{\jobname.pbsdat}
       \iow_now:Nn\g_pbs_mstreams_stream{
@@ -521,17 +525,17 @@
               {stream}{/stream}
               {fstream}{/stream}
             }~
-            /OBJ~pdfmark~
+            /OBJ~pdfmark
           }
         }
         \str_case:nn{#2}{
-          {dict}{\special{ps:~mark~\l_pbs_usenum_tl~<<#3>>/PUT~pdfmark~}}
+          {dict}{\special{ps:~mark~\l_pbs_usenum_tl~<<#3>>/PUT~pdfmark}}
           {array}{
-            \special{ps:~mark~\l_pbs_usenum_tl~0~[#3]/PUTINTERVAL~pdfmark~}
+            \special{ps:~mark~\l_pbs_usenum_tl~0~[#3]/PUTINTERVAL~pdfmark}
           }
           {stream}{\special{ps::[nobreak]
             ~mark~\l_pbs_usenum_tl~(\pbs_second_of_two:nn#3)/PUT~pdfmark~
-            ~mark~\l_pbs_usenum_tl~<<\pbs_first_of_two:nn#3>>/PUT~pdfmark~
+            ~mark~\l_pbs_usenum_tl~<<\pbs_first_of_two:nn#3>>/PUT~pdfmark
           }}
           {fstream}{
             \tl_set:Nn\l_pbs_offset_tl{0}
@@ -557,7 +561,7 @@
                       \pbs_second_of_two:nn#3
                     })~
                     /ASCIIHexDecode~filter~/PUT~
-                  pdfmark~
+                  pdfmark
                 }
               }
               \tl_set:Nx\l_pbs_offset_tl{\int_eval:n{\l_pbs_offset_tl+32767}}
@@ -571,7 +575,7 @@
             }{
               \special{ps:~
                 mark~\l_pbs_usenum_tl~<<\pbs_first_of_two:nn#3>>~/PUT~pdfmark~
-                mark~\l_pbs_usenum_tl~/CLOSE~pdfmark~
+                mark~\l_pbs_usenum_tl~/CLOSE~pdfmark
               }
             }
             \message{>}
@@ -598,7 +602,7 @@
           /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
           /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
           #4
-        /ANN~pdfmark~
+        /ANN~pdfmark
       }
       \tl_gset:Nx\g_pbs_pdflastann_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
       \int_gincr:N\g_pbs_obj_int
@@ -632,108 +636,98 @@
       }{
         \msg_warning:nn{pdfbase}{content~too~large}
       }
-      %mark bbox of box#3
-      \group_begin:
-        \dim_set:Nn\unitlength{1pt}
-        \begin{picture}(0,0)
-        %mark BBox of the graphics
-        \put(0,-\dim_to_decimal:n{\box_dp:N#3}){
-          \special{ps:
-            currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def~
+      \hbox_gset:Nn\g_pbs_distill_box{
+        \hbox_overlap_right:n{\box_use_clear:N\g_pbs_distill_box} 
+        \box_move_down:nn{\box_ht:N#3}{\hbox:n{
+          \group_begin:
+            %mark bbox of box#3
+            \dim_set:Nn\unitlength{1pt}
+            \begin{picture}(0,0)
+            \put(0,-\dim_to_decimal:n{\box_dp:N#3}){
+              \special{ps:
+                currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def
+              }
+            }
+            \put(
+              \dim_to_decimal:n{\box_wd:N#3},
+              \dim_to_decimal:n{\box_ht:N#3}
+            ){
+              \special{ps:
+                currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def
+              }
+            }
+            \end{picture}
+          \group_end:
+          \special{ps:~
+            gsave~
+            currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
+%            %translate graphics to upper left page corner
+%            \bool_if:nF{\g_pbs_powerdot_bool||\g_pbs_lscape_bool}{
+%              {
+%                pbs@llx~neg~pbs@ury~neg~translate~
+%                Resolution~neg~VResolution~neg~translate %one inch left, one inch up
+%              }?pdfmark~
+%            }
+            %distill graphics into XObject
+            gsave~pbs@curx~pbs@cury~translate~ %move origin (0,0) to the current
+            mark~                              %position
+              /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
+              /BBox~[
+                pbs@llx~pbs@curx~sub~pbs@lly~pbs@cury~sub~
+                pbs@urx~pbs@curx~sub~pbs@ury~pbs@cury~sub
+              ]
+            /BP~pdfmark~grestore~
+            \int_compare:nT{#2>\c_zero}{
+              %operations needed if used as annotation appearance
+              {
+                isls{%landscape mode (powerdot, geometry /w landscape option)
+                  /pbs@dxdy~{
+                    pbs@urx~pbs@llx~sub~abs~
+                    pbs@ury~pbs@lly~sub~abs~div
+                  }~bind~def
+                  /pbs@dydx~{1~pbs@dxdy~div}~bind~def
+                  /pbs@cx~{pbs@urx~pbs@llx~add~2~div}~bind~def
+                  /pbs@cy~{pbs@ury~pbs@lly~add~2~div}~bind~def
+                  %graphics needs to be rescaled for some reason ...
+                  [pbs@dxdy~0~0~pbs@dydx~1~pbs@dxdy~sub~pbs@cx~mul~
+                    1~pbs@dydx~sub~pbs@cy~mul]~concat
+                  %... rotated by 270 degrees ...
+                  [0~-1~1~0~pbs@cx~pbs@cy~sub~pbs@cx~pbs@cy~add]~concat
+                  %... and flipped around vertical axis
+                  [-1~0~0~1~pbs@llx~pbs@urx~add~0]~concat
+                }{%flip around horizontal axis in portrait mode
+                  [1~0~0~-1~0~pbs@lly~pbs@ury~add]~concat
+                }ifelse
+              }?pdfmark
+            }
           }
-        }
-        \put(
-          \dim_to_decimal:n{\box_wd:N#3},
-          \dim_to_decimal:n{\box_ht:N#3}
-        ){
-          \special{ps:
-            currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def~
-          }
-        }
-        %define some length values in current PS coordinate units
-        \put(0,0){
-          \special{ps:
-            currentpoint~/origin@y~exch~def~/origin@x~exch~def~
-          }
-        }
-        \dim_set:Nn\unitlength{1in}
-        \put(1,1){
-          \special{ps:
-            currentpoint~origin@y~exch~sub~/one@inch@y~exch~def~
-            origin@x~sub~/one@inch@x~exch~def~
-          }
-        }
-        \end{picture}
-      \group_end:
-      \special{ps:~
-        gsave~
-        currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
-        %translate graphics to upper left page corner
-        \bool_if:nF{\g_pbs_powerdot_bool||\g_pbs_lscape_bool}{
-          {
-            pbs@llx~neg~pbs@ury~neg~translate~
-            one@inch@x~DVImag~div~neg~one@inch@y~DVImag~div~neg~translate
-          }?pdfmark~
-        }
-        %distill graphics into XObject
-        gsave~pbs@curx~pbs@cury~translate~ %move origin (0,0) to the current
-        mark~                              %position
-          /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
-          /BBox~[
-            pbs@llx~pbs@curx~sub~pbs@lly~pbs@cury~sub~
-            pbs@urx~pbs@curx~sub~pbs@ury~pbs@cury~sub
-          ]
-        /BP~pdfmark~grestore~
-        \int_compare:nT{#2>\c_zero}{
-          %operations needed if used as annotation appearance
-          {
-            isls{%landscape mode (powerdot, geometry /w landscape option)
-              /pbs@dxdy~{
-                pbs@urx~pbs@llx~sub~abs~
-                pbs@ury~pbs@lly~sub~abs~div
-              }~bind~def
-              /pbs@dydx~{1~pbs@dxdy~div}~bind~def
-              /pbs@cx~{pbs@urx~pbs@llx~add~2~div}~bind~def
-              /pbs@cy~{pbs@ury~pbs@lly~add~2~div}~bind~def
-              %graphics needs to be rescaled for some reason ...
-              [pbs@dxdy~0~0~pbs@dydx~1~pbs@dxdy~sub~pbs@cx~mul~
-                1~pbs@dydx~sub~pbs@cy~mul]~concat
-              %... rotated by 270 degrees ...
-              [0~-1~1~0~pbs@cx~pbs@cy~sub~pbs@cx~pbs@cy~add]~concat
-              %... and flipped around vertical axis
-              [-1~0~0~1~pbs@llx~pbs@urx~add~0]~concat
-            }{%flip around horizontal axis in portrait mode
-              [1~0~0~-1~0~pbs@lly~pbs@ury~add]~concat
-            }ifelse
-          }?pdfmark~
-        }
+          \begin{picture}(0,0)\put(0,0){\box_use:N#3}\end{picture}
+          \special{ps:~mark~/EP~pdfmark~grestore}
+        }}
       }
-      \begin{picture}(0,0)\put(0,0){\box_use:N#3}\end{picture}
-      \special{ps:~mark~/EP~pdfmark~grestore}
       \tl_gset:Nx\g_pbs_pdflastxform_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
       \int_gincr:N\g_pbs_obj_int
-      \int_compare:nTF{#2>\c_zero}{
+      \int_compare:nT{#2>\c_zero}{
         %Form XObjects for use as annotation appearances require that
-        %dvips generated PostScript to be further precessed with ps2pdf
+        %dvips generated PostScript to be further processed with ps2pdf
         %may not have the exaggerated dpi resolution resulting from dvips
         %option `-Ppdf'.
         \tl_if_exist:NF\g_pbs_dpiwarned_tl{
           \tl_new:N\g_pbs_dpiwarned_tl
           \AtEndDvi{\special{ps::[nobreak]\pbs_dpiwarning:}}
         }
-      }{%Form XObject to be inserted using /SP pdfmark:
-        %The /SP pdfmark for placement of Form XObjects works reliably only
-        %since gs-9.14. As gs-9.14 had some other TeX-related issues, we
-        %require 9.15.
-        \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
-          \tl_new:N\g_pbs_gsoldwarned_tl
-          \AtEndDvi{\special{ps::[nobreak]\pbs_gsoldwarning:}}
-        }
       }
     }
 
     \cs_new_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
-      \special{ps:~gsave~currentpoint~translate~mark~#1~/SP~pdfmark~grestore~}
+      %The /SP pdfmark for placement of Form XObjects works reliably only
+      %since gs-9.14. As gs-9.14 had some other TeX-related issues, we
+      %require 9.15.
+      \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
+        \tl_new:N\g_pbs_gsoldwarned_tl
+        \AtEndDvi{\special{ps::[nobreak]\pbs_gsoldwarning:}}
+      }
+      \special{ps:~gsave~currentpoint~translate~mark~#1~/SP~pdfmark~grestore}
     }
 
     \cs_new_nopar:Nn\pbs_pdfximage:n{
@@ -744,13 +738,13 @@
         ||\str_if_eq_p:Vn\l_pbs_ext_tl{eps}
       }{
         \special{ps:~
-          mark~/_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~/NI~pdfmark~
+          mark~/_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~/NI~pdfmark
         }
         \special{psfile=#1~hsize=0~vsize=0}
         \special{ps:~
           {
             0~0~1~[1~0~0~1~0~0]~{}~image~%empty dummy, in case #1 is not
-          }?pdfmark~                     %a valid raster image file
+          }?pdfmark                      %a valid raster image file
         }
         \tl_gset:Nx\g_pbs_pdflastximage_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
         \int_gincr:N\g_pbs_obj_int
