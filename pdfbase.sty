@@ -672,8 +672,7 @@
               ]
             /BP~pdfmark~grestore~
             \int_compare:nT{#2>\c_zero}{
-              %operations needed if used as annotation appearance
-              {
+              { %operations needed if used as annotation appearance
                 isls{%landscape mode (powerdot, geometry /w landscape option)
                   /pbs@dxdy~{
                     pbs@urx~pbs@llx~sub~abs~
@@ -721,9 +720,8 @@
         \tl_new:N\g_pbs_gsoldwarned_tl
         \AtEndDvi{\special{ps::[nobreak]\pbs_gsoldwarning:}}
       }
-      \special{ps:~gsave~currentpoint~translate~
-        1~\tl_use:c{scale_#1}~div~
-        1~\tl_use:c{scale_#1}~div~scale~
+      \special{ps:~
+        gsave~currentpoint~translate~1~\tl_use:c{scale_#1}~div~dup~scale~
         mark~#1~/SP~pdfmark~grestore
       }
     }
@@ -757,8 +755,7 @@
       \special{ps:~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
     }
 
-    %marked content BDC/EMC operators
-    %require Ghostscript v. >= 9.15
+    %marked content BDC/EMC operators require Ghostscript >= 9.15
     \cs_new_nopar:Nn\pbs_pdfbdc:nn{
       \special{ps:~mark~#1~#2~/BDC~pdfmark}
       \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
