@@ -1,7 +1,8 @@
-2017-01-22
+2017-01-24
 	* v0.73 : media9.sty
 	* v0.13 : pdfbase.sty
-	* fix: pdfbase.sty: using eso-pic for XForm generation (dvips)
+	* fix: pdfbase.sty: xform generation via dvips: rescale oversized boxes to
+	fit within papersize to prevent cropping
 
 2017-01-10
 	* v0.72 : media9.sty

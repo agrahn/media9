@@ -123,7 +123,7 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{atenddvi}
 
-\def\g@pbs@date@tl{2017/01/22}
+\def\g@pbs@date@tl{2017/01/24}
 \def\g@pbs@version@tl{0.13}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
@@ -453,9 +453,8 @@
     \cs_new_nopar:Nn\pbs_pdfemc:{\special{pdf:~code~EMC}}
   }{
     %dvips
-    \RequirePackage{eso-pic}
-    \AddToShipoutPictureBG{\AtPageUpperLeft{\box_use_clear:N\g_pbs_distill_box}}
-    \box_new:N\g_pbs_distill_box
+    \bool_new:N\g_pbs_powerdot_bool %to cope with some powerdot oddity
+    \@ifclassloaded{powerdot}{\bool_gset_true:N\g_pbs_powerdot_bool}{}
 
     \sys_if_engine_pdftex:TF{
       \cs_new_nopar:Nn\pbs_filesize:n{\pdffilesize{#1}}
@@ -637,67 +636,70 @@
       }{
         \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
       }
-      \hbox_gset:Nn\g_pbs_distill_box{
-        \hbox_overlap_right:n{\box_use_clear:N\g_pbs_distill_box}
-        \box_move_down:nn{\box_ht:N#3}{\hbox:n{
-          \group_begin:
-            %mark bbox of box#3
-            \dim_set:Nn\unitlength{1pt}
-            \begin{picture}(0,0)
-            \put(0,-\dim_to_decimal:n{\box_dp:N#3}){
-              \special{ps:
-                currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def
-              }
-            }
-            \put(
-              \dim_to_decimal:n{\box_wd:N#3},
-              \dim_to_decimal:n{\box_ht:N#3}
-            ){
-              \special{ps:
-                currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def
-              }
-            }
-            \end{picture}
-          \group_end:
-          \special{ps:~
-            gsave~
-            currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
-            %distill graphics into XObject
-            gsave~pbs@curx~pbs@cury~translate~ %move origin (0,0) to the current
-            mark~                              %position
-              /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
-              /BBox~[
-                pbs@llx~pbs@curx~sub~pbs@lly~pbs@cury~sub~
-                pbs@urx~pbs@curx~sub~pbs@ury~pbs@cury~sub
-              ]
-            /BP~pdfmark~grestore~
-            \int_compare:nT{#2>\c_zero}{
-              { %operations needed if used as annotation appearance
-                isls{%landscape mode (powerdot, geometry /w landscape option)
-                  /pbs@dxdy~{
-                    pbs@urx~pbs@llx~sub~abs~
-                    pbs@ury~pbs@lly~sub~abs~div
-                  }~bind~def
-                  /pbs@dydx~{1~pbs@dxdy~div}~bind~def
-                  /pbs@cx~{pbs@urx~pbs@llx~add~2~div}~bind~def
-                  /pbs@cy~{pbs@ury~pbs@lly~add~2~div}~bind~def
-                  %graphics needs to be rescaled for some reason ...
-                  [pbs@dxdy~0~0~pbs@dydx~1~pbs@dxdy~sub~pbs@cx~mul~
-                    1~pbs@dydx~sub~pbs@cy~mul]~concat
-                  %... rotated by 270 degrees ...
-                  [0~-1~1~0~pbs@cx~pbs@cy~sub~pbs@cx~pbs@cy~add]~concat
-                  %... and flipped around vertical axis
-                  [-1~0~0~1~pbs@llx~pbs@urx~add~0]~concat
-                }{%flip around horizontal axis in portrait mode
-                  [1~0~0~-1~0~pbs@lly~pbs@ury~add]~concat
-                }ifelse
-              }?pdfmark
-            }
+      \group_begin:
+        %mark bbox of box#3
+        \dim_set:Nn\unitlength{1pt}
+        \begin{picture}(0,0)
+        \put(0,-\dim_to_decimal:n{\box_dp:N#3}){
+          \special{ps:
+            currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def
           }
-          \begin{picture}(0,0)\put(0,0){\box_use:N#3}\end{picture}
-          \special{ps:~mark~/EP~pdfmark~grestore}
-        }}
+        }
+        \put(
+          \dim_to_decimal:n{\box_wd:N#3},
+          \dim_to_decimal:n{\box_ht:N#3}
+        ){
+          \special{ps:
+            currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def
+          }
+        }
+        \end{picture}
+      \group_end:
+      \special{ps:~
+        gsave~
+        currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
+        %translate graphics to upper left page corner
+        \bool_if:nF{\g_pbs_powerdot_bool||\g_pbs_lscape_bool}{
+          {
+            pbs@llx~neg~pbs@ury~neg~translate~
+            Resolution~neg~VResolution~neg~translate %one inch left, one inch up
+          }?pdfmark~
+        }
+        %distill graphics into XObject
+        gsave~pbs@curx~pbs@cury~translate~ %move origin (0,0) to the current
+        mark~                              %position
+          /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
+          /BBox~[
+            pbs@llx~pbs@curx~sub~pbs@lly~pbs@cury~sub~
+            pbs@urx~pbs@curx~sub~pbs@ury~pbs@cury~sub
+          ]
+        /BP~pdfmark~grestore~
+        \int_compare:nT{#2>\c_zero}{
+          %operations needed if used as annotation appearance
+          {
+            isls{%landscape mode (powerdot, geometry /w landscape option)
+              /pbs@dxdy~{
+                pbs@urx~pbs@llx~sub~abs~
+                pbs@ury~pbs@lly~sub~abs~div
+              }~bind~def
+              /pbs@dydx~{1~pbs@dxdy~div}~bind~def
+              /pbs@cx~{pbs@urx~pbs@llx~add~2~div}~bind~def
+              /pbs@cy~{pbs@ury~pbs@lly~add~2~div}~bind~def
+              %graphics needs to be rescaled for some reason ...
+              [pbs@dxdy~0~0~pbs@dydx~1~pbs@dxdy~sub~pbs@cx~mul~
+                1~pbs@dydx~sub~pbs@cy~mul]~concat
+              %... rotated by 270 degrees ...
+              [0~-1~1~0~pbs@cx~pbs@cy~sub~pbs@cx~pbs@cy~add]~concat
+              %... and flipped around vertical axis
+              [-1~0~0~1~pbs@llx~pbs@urx~add~0]~concat
+            }{%flip around horizontal axis in portrait mode
+              [1~0~0~-1~0~pbs@lly~pbs@ury~add]~concat
+            }ifelse
+          }?pdfmark
+        }
       }
+      \begin{picture}(0,0)\put(0,0){\box_use:N#3}\end{picture}
+      \special{ps:~mark~/EP~pdfmark~grestore}
       \tl_gset:Nx\g_pbs_pdflastxform_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
       \int_gincr:N\g_pbs_obj_int
       \int_compare:nT{#2>\c_zero}{
@@ -755,7 +757,8 @@
       \special{ps:~mark~{Catalog}~<<#1>>~/PUT~pdfmark}
     }
 
-    %marked content BDC/EMC operators require Ghostscript >= 9.15
+    %marked content BDC/EMC operators
+    %require Ghostscript v. >= 9.15
     \cs_new_nopar:Nn\pbs_pdfbdc:nn{
       \special{ps:~mark~#1~#2~/BDC~pdfmark}
       \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
