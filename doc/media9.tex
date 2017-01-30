@@ -1230,7 +1230,8 @@ A few 3D JavaScript files ready to be used are already installed along with `med
 \end{enumerate}
 
 \section{Caveats}\label{bugs}
-Large media files may cause \TeX{} to interrupt with error
+\begin{enumerate}
+  \item Large media files may cause \TeX{} to interrupt with error
 \begin{verbatim}
 ! TeX capacity exceeded, sorry [main memory size=3000000].
 \end{verbatim}
@@ -1241,6 +1242,9 @@ There are two options to handle such situations:
 The first one is to increase \TeX's main memory. You may follow the steps in the \href{http://mirror.ctan.org/macros/latex/contrib/animate/animate.pdf\#dest:mem}{Bugs} section of the `animate' package documentation. In \TeX{}Live-2012, the maximum value that can be set is \verb+main_memory = 12435455+.
 
 If increasing \TeX's main memory does not help, use the package option `\verb+bigfiles+' with media9. It defers file embedding from the DVI producing to the PS producing step.
+
+  \item In right-to-left typesetting context (RTL), the \verb+<poster text>+ argument of \verb+\includemedia+ and the text arguments for button faces of the \verb+\mediabutton+ command should be enclosed in pairs of \verb+\beginR+ and \verb+\endR+.
+\end{enumerate}
 
 \section{Acknowledgements}
 This package was written using the new \LaTeX3 syntax which was a lot of fun. Many thanks to the \LaTeX3 team!

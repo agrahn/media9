@@ -41,8 +41,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{atenddvi}
 
-\def\g@mix@date@tl{2017/01/24}
-\def\g@mix@version@tl{0.73}
+\def\g@mix@date@tl{2017/01/30}
+\def\g@mix@version@tl{0.74}
 
 \def\g@mix@liiikerneldate{2015/09/27}
 \def\g@mix@liiipkgdate{2015/09/27}
@@ -890,6 +890,7 @@
 \NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
   \mix_uriend:
   \group_begin:
+  \int_compare:nT{\TeXXeTstate>\c_zero}{\beginL}
   \leavevmode
   %empty stream as appearance dummy
   \cs_if_exist:NF\g_mix_appearance_tl{
@@ -1211,6 +1212,7 @@
     }
     \int_gincr:N\g_mix_rmcnt_int
   }
+  \int_compare:nT{\TeXXeTstate>\c_zero}{\endL}
   \group_end:
 }
 \tl_set_eq:NN\l_mix_includemedia_tl\includemedia
@@ -2358,6 +2360,7 @@
 \NewDocumentCommand\mediabutton{O{}m}{%#1 options, #2 normal button text
   \mix_uriend:
   \group_begin:
+  \int_compare:nT{\TeXXeTstate>\c_zero}{\beginL}
   \leavevmode
   %reset various variables
   \tl_gclear:N\g_mix_overbtn_tl
@@ -2419,7 +2422,9 @@
     }
     \int_gincr:N\g_mix_mbtncnt_int
   }
+  \int_compare:nT{\TeXXeTstate>\c_zero}{\endL}
   \group_end:
 }
 \tl_set_eq:NN\l_mix_mediabutton_tl\mediabutton
 \tl_set:Nn\mediabutton{\mix_uribegin:\l_mix_mediabutton_tl}
+
