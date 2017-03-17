@@ -67,10 +67,12 @@
 %
 %   --------
 %
-%   \pbs_pdfxform:nnn
-%     #1: add pgf/tikz transparency, shading etc. resources? (1|0)
-%     #2: used as PDF annotation appearance? (1|0)
-%     #3: savebox number
+%   \pbs_pdfxform:nnnnn
+%     #1: add pgf/tikz resources (transparency, shading)? (1|0) %dvipdfmx/xetex
+%     #2: used as PDF annotation appearance? (1|0)              %dvips/pdftex
+%     #3: additional resources                                  %all BUT dvips
+%     #4: additional dictionary entries
+%     #5: savebox number
 %     creates PDF Form XObject from savebox content
 %
 %   \pbs_pdflastxform:
@@ -123,8 +125,8 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{atenddvi}
 
-\def\g@pbs@date@tl{2017/01/24}
-\def\g@pbs@version@tl{0.13}
+\def\g@pbs@date@tl{2017/03/16}
+\def\g@pbs@version@tl{0.14}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -244,19 +246,31 @@
     }
     \tl_gset:Nx\g_pbs_pdflastobj_tl{\the\pdflastobj\space 0~R}
   }
-
   \cs_new_nopar:Nn\pbs_pdfannot:nnnn{
-    \immediate\pdfannot~width~#1~height~#2~depth~#3 {#4}
+    %(hidden) dummy Widget, workaround for (pre?) AR-DC bug;
+    %see https://forums.adobe.com/message/5787612#5787612
+    \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
+      \immediate\pdfannot~width~#1~height~#2~depth~#3 {/Subtype/Widget/F~2}}
+    \immediate\pdfannot~width~#1~height~#2~depth~#3 {
+      \cs_if_exist_use:N\ocgbase_insert_oc:~#4}
     \tl_gset:Nx\g_pbs_pdflastann_tl{\the\pdflastannot\space 0~R}
   }
 
   \cs_new:Nn\pbs_pdflink:nn{
-    \immediate\pdfstartlink~user~{#1}#2\pdfendlink
+    \immediate\pdfstartlink~user~{
+      \cs_if_exist_use:N\ocgbase_insert_oc:~#1}#2\pdfendlink
   }
 
-  \cs_new_nopar:Nn\pbs_pdfxform:nnn{ % #1 not used
+  \cs_new_nopar:Nn\pbs_pdfxform:nnnnn{ % #1 not used
+    %additional resources
+    \tl_set:Nx\l_tmpa_tl{\the\pdfpageresources~#3}\tl_trim_spaces:N\l_tmpa_tl
+    %additional dict entries
+    \tl_set:Nx\l_tmpb_tl{#4}
+    \tl_trim_spaces:N\l_tmpb_tl
     \int_compare:nT{#2>\c_zero}{\immediate}
-    \pdfxform~resources~{\the\pdfpageresources}~#3
+    \pdfxform~
+      \str_if_eq_x:nnF{\l_tmpb_tl}{}{attr~{\l_tmpb_tl}~}
+      \str_if_eq_x:nnF{\l_tmpa_tl}{}{resources~{\l_tmpa_tl}~}#5
     \tl_gset:Nx\g_pbs_pdflastxform_tl{\the\pdflastxform\space 0~R}
   }
 
@@ -303,9 +317,23 @@
 
   \cs_new_nopar:Nn\pbs_pdfbdc:nn{
     \pdfliteral~page~{#1/rm@oc\int_use:N\g_pbs_oc_int\space BDC}
-    \iow_shipout_x:Nx\@mainaux{\token_to_str:N\pbs@seq@push@cx{
-        pbs@props@\noexpand\the\g@pbs@page@int
-    }{/rm@oc\int_use:N\g_pbs_oc_int\space#2}}
+    %decide whether the current property is to be written to the page
+    %resources or to the xobject resources, depending on whether marked content
+    %is written to a page stream or to an xobject stream (for compatibility with
+    %`xsavebox' package)
+    \bool_if:nTF{
+      \cs_if_exist:NTF\xsb_count_props:{
+        \int_compare_p:n{\xsb_count_props:>\c_zero}
+      }{
+        \c_false_bool
+      }
+    }{
+      \xsb_addto_props:n{/rm@oc\int_use:N\g_pbs_oc_int\space#2}
+    }{
+      \iow_shipout_x:Nx\@mainaux{\token_to_str:N\pbs@seq@push@cx{
+          pbs@props@\noexpand\the\g@pbs@page@int
+      }{/rm@oc\int_use:N\g_pbs_oc_int\space#2}}
+    }
     \int_gincr:N\g_pbs_oc_int
   }
 
@@ -315,15 +343,20 @@
   \tl_gset:Nx\g_pbs_output_tl{\the\output}
   \global\output{
     \pbs_zap_properties: %purge those from previous page
-    \group_begin:
-    \tl_set:Nx\l_pbs_temp_tl{\group_end:
-      \global\pdfpageresources{
-        \the\pdfpageresources
-        /Properties<<\seq_if_exist:cT{pbs@props@\the\g@pbs@page@int}{
-          \seq_use:cn{pbs@props@\the\g@pbs@page@int}{~}
-        }>>
-      }
-    }\l_pbs_temp_tl
+    \tl_set:Nx\l_tmpa_tl{\seq_if_exist:cT{pbs@props@\the\g@pbs@page@int}{
+      \seq_use:cn{pbs@props@\the\g@pbs@page@int}{~}}}
+    \tl_trim_spaces:N\l_tmpa_tl
+    \str_if_eq_x:nnF{\l_tmpa_tl}{}{
+      \group_begin:
+      \tl_set:Nx\l_pbs_temp_tl{\group_end:
+        \global\pdfpageresources{
+          \the\pdfpageresources
+          /Properties<<\seq_if_exist:cT{pbs@props@\the\g@pbs@page@int}{
+            \seq_use:cn{pbs@props@\the\g@pbs@page@int}{~}
+          }>>
+        }
+      }\l_pbs_temp_tl
+    }
     \g_pbs_output_tl
     \int_gincr:N\g@pbs@page@int
     %purge from current page's properties, because they aren't needed any longer
@@ -366,17 +399,36 @@
       \bool_if:NTF\g_pbs_lscape_bool{
         %fix missing annotation rotation of (x)dvipdfmx on landscape pages
         \box_move_up:nn{\dim_eval:n{#2}}{\vbox:n{
+          %(hidden) dummy Widget, workaround for (pre?) AR-DC bug;
+          %see https://forums.adobe.com/message/5787612#5787612
+          \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
+            \special{pdf:ann~
+              width~\dim_eval:n{#2+#3}\space
+              height~\dim_eval:n{#1}\space
+              depth~\dim_eval:n{\c_zero_dim}~<</Subtype/Widget/F~2>>
+            }
+          }
           \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
             width~\dim_eval:n{#2+#3}\space
             height~\dim_eval:n{#1}\space
-            depth~\dim_eval:n{\c_zero_dim}~<<#4>>
+            depth~\dim_eval:n{\c_zero_dim}~<<
+              \cs_if_exist_use:N\ocgbase_insert_oc:~#4>>
           }
         }}
       }{
+        %(hidden) dummy Widget, workaround for (pre?) AR-DC bug;
+        %see https://forums.adobe.com/message/5787612#5787612
+        \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
+          \special{pdf:ann~
+            width~\dim_eval:n{#1}\space
+            height~\dim_eval:n{#2}\space
+            depth~\dim_eval:n{#3}~<</Subtype/Widget/F~2>>
+          }
+        }
         \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
           width~\dim_eval:n{#1}\space
           height~\dim_eval:n{#2}\space
-          depth~\dim_eval:n{#3}~<<#4>>
+          depth~\dim_eval:n{#3}~<<\cs_if_exist_use:N\ocgbase_insert_oc:~#4>>
         }
       }
       \tl_gset:Nx\g_pbs_pdflastann_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
@@ -384,35 +436,43 @@
     }
 
     \cs_new:Nn\pbs_pdflink:nn{
-      \special{pdf:bann~<<#1>>}#2\special{pdf:eann}
+      \special{pdf:bann~<<\cs_if_exist_use:N\ocgbase_insert_oc:~#1>>}#2
+      \special{pdf:eann}
     }
 
-    \cs_new_nopar:Nn\pbs_pdfxform:nnn{ % #2 not used
+    \cs_new_nopar:Nn\pbs_pdfxform:nnnnn{ % #2 not used
       \begin{picture}(0,0)
         \put(0,0){
           \special{pdf:bxobj~@pbs@obj\int_use:N\g_pbs_obj_int\space
-            width\space \dim_use:N\box_wd:N#3\space
-            height\space\dim_use:N\box_ht:N#3\space
-            depth\space \dim_use:N\box_dp:N#3
+            width\space \dim_use:N\box_wd:N#5\space
+            height\space\dim_use:N\box_ht:N#5\space
+            depth\space \dim_use:N\box_dp:N#5
           }
-          \box_use:N#3
+          \box_use:N#5
+          \tl_clear:N\l_tmpa_tl{}
           %transparency et al. for PGF
           \bool_if:nT{\int_compare_p:n{#1>\c_zero} && \g_pbs_pgfloaded_bool}{
-            \tl_set:Nn\l_pbs_temp_tl{}
             \ifpgf@sys@pdf@extgs@exists
-              \tl_set:Nn\l_pbs_temp_tl{/ExtGState~@pgfextgs}
+              \tl_set:Nn\l_tmpa_tl{/ExtGState~@pgfextgs}
             \fi
             \ifpgf@sys@pdf@patterns@exists
-              \tl_put_right:Nn\l_pbs_temp_tl{/Pattern~@pgfpatterns}
+              \tl_put_right:Nn\l_tmpa_tl{/Pattern~@pgfpatterns}
             \fi
             \ifpgf@sys@pdf@colorspaces@exists
-              \tl_put_right:Nn\l_pbs_temp_tl{/ColorSpace~@pgfcolorspaces}
+              \tl_put_right:Nn\l_tmpa_tl{/ColorSpace~@pgfcolorspaces}
             \fi
-            \tl_if_blank:VF\l_pbs_temp_tl{
-              \special{pdf:put~@resources~<<\l_pbs_temp_tl>>}
-            }
           }
-          \special{pdf:exobj}
+          %additional resources
+          \tl_put_right:Nx\l_tmpa_tl{~#3}\tl_trim_spaces:N\l_tmpa_tl
+          \str_if_eq_x:nnF{\l_tmpa_tl}{}{
+            \special{pdf:put~@resources~<<\l_tmpa_tl>>}
+          }
+          %additional dict entries
+          \tl_set:Nx\l_tmpa_tl{#4}
+          \tl_trim_spaces:N\l_tmpa_tl
+          \special{pdf:exobj %close form xobject
+            \str_if_eq_x:nnF{\l_tmpa_tl}{}{<<\l_tmpa_tl>>}
+          }
         }
       \end{picture}
       \tl_gset:Nx\g_pbs_pdflastxform_tl{@pbs@obj\int_use:N\g_pbs_obj_int}
@@ -593,11 +653,21 @@
         }
         \end{picture}
       \group_end:
+      \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
+        \special{ps:~
+          mark~
+            /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
+            /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
+            /Subtype/Widget/F~2
+          /ANN~pdfmark
+        }
+        \int_gincr:N\g_pbs_obj_int
+      }
       \special{ps:~
         mark~
           /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
           /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
-          #4
+          \cs_if_exist_use:N\ocgbase_insert_oc:~#4
         /ANN~pdfmark
       }
       \tl_gset:Nx\g_pbs_pdflastann_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
@@ -606,7 +676,8 @@
 
     \cs_new:Nn\pbs_pdflink:nn{
       \cs_if_exist:NTF\pdfmark{
-        \pdfmark[#2]{pdfmark=/ANN,Raw={#1}}
+        \pdfmark[#2]{pdfmark=/ANN,Raw={
+          \cs_if_exist_use:N\ocgbase_insert_oc:~#1}}
       }{
         \hbox_set:Nn\l_tmpb_box{#2}
         \pbs_pdfannot:nnnn{
@@ -625,29 +696,30 @@
       output.
     }
 
-    \cs_new_nopar:Nn\pbs_pdfxform:nnn{ % #1 not used
+    \cs_new_nopar:Nn\pbs_pdfxform:nnnnn{ % #1, #3 not used (resources are
+      %managed by pdfmarks)
       %rescale box to fit within the papersize while distilling
       \tl_gset:cx{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}{\fp_eval:n{min(1.0,
-        \dim_ratio:nn{\paperwidth}{\box_wd:N#3},
-        \dim_ratio:nn{\paperheight}{\box_ht:N#3+\box_dp:N#3}
+        \dim_ratio:nn{\paperwidth}{\box_wd:N#5},
+        \dim_ratio:nn{\paperheight}{\box_ht:N#5+\box_dp:N#5}
       )}}
-      \box_scale:Nnn#3{
+      \box_scale:Nnn#5{
         \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
       }{
         \tl_use:c{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}
       }
       \group_begin:
-        %mark bbox of box#3
+        %mark bbox of box#5
         \dim_set:Nn\unitlength{1pt}
         \begin{picture}(0,0)
-        \put(0,-\dim_to_decimal:n{\box_dp:N#3}){
+        \put(0,-\dim_to_decimal:n{\box_dp:N#5}){
           \special{ps:
             currentpoint~/pbs@lly~exch~def~/pbs@llx~exch~def
           }
         }
         \put(
-          \dim_to_decimal:n{\box_wd:N#3},
-          \dim_to_decimal:n{\box_ht:N#3}
+          \dim_to_decimal:n{\box_wd:N#5},
+          \dim_to_decimal:n{\box_ht:N#5}
         ){
           \special{ps:
             currentpoint~/pbs@ury~exch~def~/pbs@urx~exch~def
@@ -698,14 +770,21 @@
           }?pdfmark
         }
       }
-      \begin{picture}(0,0)\put(0,0){\box_use:N#3}\end{picture}
+      \begin{picture}(0,0)\put(0,0){\box_use:N#5}\end{picture}
       \special{ps:~mark~/EP~pdfmark~grestore}
+      %additional dict entries
+      \tl_set:Nx\l_tmpa_tl{#4}
+      \tl_trim_spaces:N\l_tmpa_tl
+      \str_if_eq_x:nnF{\l_tmpa_tl}{}{
+        \special{ps:~mark~{pbs@obj\int_use:N\g_pbs_obj_int}~<<\l_tmpa_tl>>~
+          /PUT~pdfmark}
+      }
       \tl_gset:Nx\g_pbs_pdflastxform_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
       \int_gincr:N\g_pbs_obj_int
       \int_compare:nT{#2>\c_zero}{
         %Form XObjects for use as annotation appearances require that
         %dvips generated PostScript to be further processed with ps2pdf
-        %may not have the exaggerated dpi resolution resulting from dvips
+        %must not have the exaggerated dpi resolution resulting from dvips
         %option `-Ppdf'.
         \tl_if_exist:NF\g_pbs_dpiwarned_tl{
           \tl_new:N\g_pbs_dpiwarned_tl

@@ -4,8 +4,8 @@
 %    http://mirror.ctan.org/help/Catalogue/licenses.lppl.html
 % for the details of that license.
 %
-%\pdfcompresslevel=0
-%\pdfobjcompresslevel=0
+\pdfcompresslevel=0
+\pdfobjcompresslevel=0
 \listfiles
 \documentclass[a4paper]{article}
 \frenchspacing
@@ -20,9 +20,13 @@
 \usepackage[UKenglish]{babel}
 \usepackage{graphicx}
 \usepackage{color}
-\usepackage{lmodern}
-\usepackage{microtype}
 \usepackage[T1]{fontenc}
+%\usepackage{lmodern}
+%\usepackage[scaled=0.85]{luximono}
+  \usepackage[tt=false]{libertine} %override beramono (doesn't look like tt font)
+  \usepackage[libertine]{newtxmath}
+%  \usepackage[scaled=0.83]{luximono} %override beramono (doesn't look like tt font)
+\usepackage{microtype}
 %\usepackage{float}
 \usepackage{parskip}
 \usepackage{tabls}
@@ -43,7 +47,6 @@
   pagebordercolor={0 0 1},
   urlbordercolor={0 0 1}
 }
-\usepackage[scaled=0.85]{luximono}
 
 %\usepackage{listings}
 \usepackage{minted}
@@ -56,6 +59,8 @@
 
 \hyphenation{Ja-va-Script}
 
+\newsavebox{\keyshift}
+\newsavebox{\spacebar}
 \newsavebox{\COO}
 \savebox{\COO}{$\overrightarrow{COO}$}
 \newsavebox{\CtoC}
@@ -186,7 +191,8 @@ Except for `\verb+dvipdfmx+', `\verb+xetex+' and `\verb+bigfiles+', the options 
 
 \begin{animateinline}[autoplay,loop,nomouse]{1}\strut\emph{Important:}\newframe[3]\end{animateinline} If PDF is generated via DVI and Postscript by the command sequence \verb+latex+ $\rightarrow$ \verb+dvips+ $\rightarrow$ \verb+ps2pdf+, \verb+dvips+ option `\verb+-Ppdf+' should \emph{not} be set when converting the intermediate DVI into Postscript. If you cannot do without, put `\verb+-D 1200+' \emph{after} `\verb+-Ppdf+' on the command line. Users of \LaTeX-aware text editors with menu-driven toolchain invocation, such as \TeX{}nicCenter, should check the configuration of the \verb+dvips+ call.
 
-Option `\verb+bigfiles+' is only relevant for the \verb+latex+ $\rightarrow$ \verb+dvips+ $\rightarrow$ \verb+ps2pdf+ workflow. It may be needed if large media files cause \verb+latex+ to abort with error `\verb+TeX capacity exceeded+'. See Sect.\ \ref{bugs}.
+  Option `\verb+bigfiles+' is only relevant for the \verb+latex+ $\rightarrow$ \verb+dvips+ $\rightarrow$ \verb+ps2pdf+ workflow. It may be needed if large media files cause \verb+latex+ to abort with error `\verb+TeX capacity exceeded+'. See Sect.\ \ref{bugs}.\enlargethispage{2\baselineskip}
+
 
 \section{The user interface}
 Package `media9' provides commands for media inclusion (\verb+\includemedia+) and insertion of media control buttons (\verb+\mediabutton+). The latter is introduced in Sect. \ref{mbtn}.
@@ -780,8 +786,8 @@ parameter & description\\\hline\hline
 
 \makeatletter%
 \def\myAcrobatmenu#1#2{\leavevmode\pdfstartlink attr{\Hy@setpdfborder\ifx\@pdfhighlight\@empty\else/H\@pdfhighlight\fi\ifx\@menubordercolor\relax\else/C[\@menubordercolor]\fi} user{/Subtype/Link\ifHy@pdfa/F4\fi/A<</S/Named/N/#1>>}\relax\Hy@colorlink\@menucolor#2\close@pdflink}\makeatother
-\savebox{\COO}{\keys{\shift+}}
-\savebox{\CtoC}{\keys{\unexpanded{\makebox[2\width][c]{Space}}}}
+\savebox{\keyshift}{\keys{\shift+}}
+\savebox{\spacebar}{\keys{\unexpanded{\makebox[2\width][c]{Space}}}}
 \begin{figure}[bp]
 \centering
 \begin{Verbatim}
@@ -806,7 +812,7 @@ parameter & description\\\hline\hline
   passcontext                          %show the player's context menu
 ]{}{SlideShow.swf}
 \hfill}
-\caption{Slide-show example with one embedded and several remote image files, one of which is a live image. Images 2 and 3 are examples of remote images with variable resolution; the best fitting image resolution is requested from the server depending on the current display size. The listing in Fig.~\ref{SlideShowXML} is used as content of file \myAcrobatmenu{ShowHideFileAttachment}{`config.xml'}. Manually cycle forwards through the images by mouse-click or backwards by \usebox{\COO}+mouse-click. Play/pause auto-cycling through the slide-show by hitting \usebox{\CtoC}. Also, the context (right-click) menu of the player can be used.}\label{slideshowex}
+\caption{Slide-show example with one embedded and several remote image files, one of which is a live image. Images 2 and 3 are examples of remote images with variable resolution; the best fitting image resolution is requested from the server depending on the current display size. The listing in Fig.~\ref{SlideShowXML} is used as content of file \myAcrobatmenu{ShowHideFileAttachment}{`config.xml'}. Manually cycle forwards through the images by mouse-click or backwards by \usebox{\keyshift}+mouse-click. Play/pause auto-cycling through the slide-show by hitting \usebox{\spacebar}. Also, the context (right-click) menu of the player can be used.}\label{slideshowex}
 \end{figure}
 
 \begin{figure}[bp]
@@ -1243,7 +1249,7 @@ The first one is to increase \TeX's main memory. You may follow the steps in the
 
 If increasing \TeX's main memory does not help, use the package option `\verb+bigfiles+' with media9. It defers file embedding from the DVI producing to the PS producing step.
 
-  \item In right-to-left typesetting context (RTL), the \verb+<poster text>+ argument of \verb+\includemedia+ and the text arguments for button faces of the \verb+\mediabutton+ command should be enclosed in pairs of \verb+\beginR+ and \verb+\endR+.
+  \item In right-to-left typesetting context (RTL) using the (pdf)\LaTeX{} or \XeLaTeX{} engines, the \verb+<poster text>+ argument of \verb+\includemedia+ and the text arguments for button faces of the \verb+\mediabutton+ command should be enclosed in pairs of \verb+\beginR+ and \verb+\endR+.
 \end{enumerate}
 
 \section{Acknowledgements}

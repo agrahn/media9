@@ -41,8 +41,8 @@
 \RequirePackage{atbegshi}
 \RequirePackage{atenddvi}
 
-\def\g@mix@date@tl{2017/01/30}
-\def\g@mix@version@tl{0.74}
+\def\g@mix@date@tl{2017/03/16}
+\def\g@mix@version@tl{0.77}
 
 \def\g@mix@liiikerneldate{2015/09/27}
 \def\g@mix@liiipkgdate{2015/09/27}
@@ -328,7 +328,7 @@
 \cs_set_eq:NN\mix_pdfannot:nnnn\pbs_pdfannot:nnnn
 \cs_set_eq:NN\mix_appendtofields:n\pbs_appendtofields:n
 \cs_set_eq:NN\mix_pdflink:nn   \pbs_pdflink:nn
-\cs_new:Nn\mix_pdfxform:n{\pbs_pdfxform:nnn{1}{1}{#1}}
+\cs_new:Nn\mix_pdfxform:n{\pbs_pdfxform:nnnnn{1}{1}{}{}{#1}}
 \cs_set_eq:NN\mix_pdfximage:n  \pbs_pdfximage:n
 \cs_set_eq:NN\mix_pdfcatalog:n \pbs_pdfcatalog:n
 
@@ -886,11 +886,23 @@
 }
 \ExplSyntaxOn
 
+%environment for setting LTR typesetting direction with e-TeX based engines 
+\cs_new:Nn\mix_beginLTR:{
+  \cs_if_exist:NT\TeXXeTstate{
+    \int_compare:nT{\TeXXeTstate>\c_zero}{\beginL}
+  }
+}
+\cs_new:Nn\mix_endLTR:{
+  \cs_if_exist:NT\TeXXeTstate{
+    \int_compare:nT{\TeXXeTstate>\c_zero}{\endL}
+  }
+}
+
 \ior_new:N\l_mix_vfile_stream %file stream for 3D views files
 \NewDocumentCommand\includemedia{O{}mm}{%#1 options, #2 text/image #3 media file
   \mix_uriend:
   \group_begin:
-  \int_compare:nT{\TeXXeTstate>\c_zero}{\beginL}
+  \mix_beginLTR:
   \leavevmode
   %empty stream as appearance dummy
   \cs_if_exist:NF\g_mix_appearance_tl{
@@ -1137,7 +1149,7 @@
     % #1:width, #2:height, #3:depth, #4:content (key-value)
     \mix_pdfannot:nnnn{\g_mix_wd_tl}{\g_mix_ht_tl}{\g_mix_dp_tl}{
       /Subtype/RichMedia
-      /F~4\cs_if_exist_use:N\ocgxii@insert@OC
+      /F~4
       /BS~<</W~0/S/S>>
       /Contents~(media~embedded~by~media9~[\g_mix_version_tl~(\g_mix_date_tl)])
       /NM~(\g_mix_label_tl)
@@ -1197,22 +1209,24 @@
     }{%insert play button overlay
       \mix_insert_btnocg: %create OCG
       \cs_gset_eq:Nc\mix_pbtn:NN{g@mix@pbtn@\g_mix_usrpbtn_tl @tl}
-      %\hbox_set:Nn\l_mix_pbtn_box{\mix_pbtn:NN\g_mix_wd_tl\g_mix_tt_tl}
-      \sbox\l_mix_pbtn_box{\mix_pbtn:NN\g_mix_wd_tl\g_mix_tt_tl}
-      \box_move_down:nn{\g_mix_dp_tl}{
-        \hbox_to_wd:nn{\g_mix_wd_tl}{
-          \vbox_to_ht:nn{\g_mix_tt_tl}{
-            \vss
-            \ocgbase_oc_bdc:n{\g_mix_btnocg_tl}
-            \box_use:N\l_mix_pbtn_box
-            \ocgbase_oc_emc:
+      \group_begin:
+      \cs_if_exist:NT\textdir{\textdir TLT}
+        \sbox\l_mix_pbtn_box{\mix_pbtn:NN\g_mix_wd_tl\g_mix_tt_tl}
+        \box_move_down:nn{\g_mix_dp_tl}{
+          \hbox_to_wd:nn{\g_mix_wd_tl}{
+            \vbox_to_ht:nn{\g_mix_tt_tl}{
+              \vss
+              \ocgbase_oc_bdc:n{\g_mix_btnocg_tl}
+              \box_use:N\l_mix_pbtn_box
+              \ocgbase_oc_emc:
+            }
           }
         }
-      }
+      \group_end:
     }
     \int_gincr:N\g_mix_rmcnt_int
   }
-  \int_compare:nT{\TeXXeTstate>\c_zero}{\endL}
+  \mix_endLTR:
   \group_end:
 }
 \tl_set_eq:NN\l_mix_includemedia_tl\includemedia
@@ -2360,7 +2374,7 @@
 \NewDocumentCommand\mediabutton{O{}m}{%#1 options, #2 normal button text
   \mix_uriend:
   \group_begin:
-  \int_compare:nT{\TeXXeTstate>\c_zero}{\beginL}
+  \mix_beginLTR:
   \leavevmode
   %reset various variables
   \tl_gclear:N\g_mix_overbtn_tl
@@ -2384,20 +2398,12 @@
       \box_use:N\l_mix_poster_box}}{\box_use:N\l_mix_poster_box}}
     \mix_pdfxform:n{\l_mix_poster_box}
     \tl_set:Nx\g_mix_normalbtn_tl{\mix_pdflastxform:}
-    \bool_if:nT{ %dummy Widget for ocgx2, AR seems to need it
-%      \cs_if_exist_p:N\ocgxii@insert@OC && !\tl_if_blank_p:V\ocgxii@insert@OC
-      !\cs_if_exist:NTF\ocgxii@insert@OC{
-        \tl_if_blank_p:V\ocgxii@insert@OC
-      }{
-        \c_true_bool
-      }
-    }{\mix_pdfannot:nnnn{\width}{\height}{\depth}{/Subtype/Widget/F~2}}
     %insert widget annotation
     \mix_pdfannot:nnnn{\width}{\height}{\depth}{
       /Subtype/Widget
       /T~(mbtn@\int_use:N\g_mix_mbtncnt_int)
       \tl_if_empty:NF\g_mix_tooltip_tl{/TU~(\g_mix_tooltip_tl)}
-      /FT/Btn/Ff~65536\cs_if_exist_use:N\ocgxii@insert@OC
+      /FT/Btn/Ff~65536
       \tl_if_empty:NTF\g_mix_downbtn_tl{/H/I}{/H/P}
       /AP~<<
         /N~\g_mix_normalbtn_tl
@@ -2422,7 +2428,7 @@
     }
     \int_gincr:N\g_mix_mbtncnt_int
   }
-  \int_compare:nT{\TeXXeTstate>\c_zero}{\endL}
+  \mix_endLTR:
   \group_end:
 }
 \tl_set_eq:NN\l_mix_mediabutton_tl\mediabutton
