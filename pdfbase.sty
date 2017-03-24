@@ -107,6 +107,12 @@
 %   ... \pbs_pdfemc:
 %     #1: tag, #2: properties dictionary obj ID
 %
+%   --------
+%
+%   alternative \AtEndDvi
+%   \pbs_at_end_dvi:n
+%     #1: \specials or \write to be inserted on the very last page
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % This work may be distributed and/or modified under the
@@ -123,18 +129,22 @@
 
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
-\RequirePackage{atenddvi}
 
-\def\g@pbs@date@tl{2017/03/16}
-\def\g@pbs@version@tl{0.14}
+\def\g@pbs@date@tl{2017/03/23}
+\def\g@pbs@version@tl{0.15}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
 
-\int_new:N\g@pbs@page@int %abs. page counter (zero based)
+\int_new:N\g_pbs_page_int %abs. page counter
+
+%creating global definitions
+\cs_new:Npn\pbs@newkey#1#2{\tl_gset:cx{#1}{#2}}
+
+\msg_set:nnn{pdfbase}{rerun}{Rerun~to~get~internal~references~right!}
 
 %LaTeX2e wrapper
-\cs_new:Npn\pbs@seq@push@cx#1#2{
+\cs_new_nopar:Npn\pbs@seq@push@cx#1#2{
   \seq_if_exist:cF{#1}{\seq_new:c{#1}}
   \seq_gput_right:cx{#1}{#2}
 }
@@ -153,7 +163,43 @@
   }
 }
 
+% page (bop, eop) hooks
+\cs_new:Nn\pbs_bop_action:n{\seq_gput_right:Nn\g_pbs_bop_seq{#1}}
+\cs_new:Nn\pbs_eop_action:n{\seq_gput_right:Nn\g_pbs_eop_seq{#1}}
+\seq_new:N\g_pbs_bop_seq
+\seq_new:N\g_pbs_eop_seq
+
+% own AtEndDvi implementation
+\cs_new:Nn\pbs_at_end_dvi:n{\seq_gput_right:Nn\g_pbs_eod_seq{#1}}
+\seq_new:N\g_pbs_eod_seq
+\pbs@newkey{pbs@last@page}{0}
+
+% AtEndDvi check
+\AtBeginDocument{
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\pbs@newkey[2]{}
+    \token_to_str:N\providecommand\token_to_str:N\pbs@seq@push@cx[2]{}
+    \token_to_str:N\providecommand\token_to_str:N\pbs@at@end@dvi@check{}}
+  \iow_now:Nx\@mainaux{\token_to_str:N\pbs@at@end@dvi@check}
+  \cs_new:Npn\pbs@at@end@dvi@check{
+    \bool_if:nT{
+      !\tl_if_exist:NTF\pbs@last@page{
+        \int_compare_p:n{\pbs@last@page=\g_pbs_page_int}
+      }{
+        \c_false_bool
+      }
+    }{
+      \cs_if_exist:NF\g_pbs_rerunwarned_tl{
+        \tl_new:N\g_pbs_rerunwarned_tl
+        \msg_warning:nn{pdfbase}{rerun}
+      }
+    }
+  }
+}
+
+%%%%%%%%%%%%%%%%%
 %package options
+%%%%%%%%%%%%%%%%%
 
 %unknown package option error message
 \msg_gset:nnnn{pdfbase}{unknown~package~option}{Unknown~package~option~`#1'.}{
@@ -187,9 +233,11 @@
 \ProcessKeysOptions{pdfbase}
 \sys_if_engine_xetex:T{\bool_gset_true:N\g_pbs_dvipdfmx_bool}
 
-\cs_new:Nn\pbs_first_of_two:nn{#1} %helpers
-\cs_new:Nn\pbs_second_of_two:nn{#2}
+\cs_new_nopar:Nn\pbs_first_of_two:nn{#1} %helpers
+\cs_new_nopar:Nn\pbs_second_of_two:nn{#2}
 
+\cs_new_nopar:Nn\pbs_insert_properties_entry:{}
+\cs_new_nopar:Nn\pbs_delete_properties_entry:{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %commands for creating PDF objects, annots etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -274,7 +322,7 @@
     \tl_gset:Nx\g_pbs_pdflastxform_tl{\the\pdflastxform\space 0~R}
   }
 
-  \cs_new:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
+  \cs_new_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
     \hbox_overlap_right:n{\smash{\pdfrefxform\pbs_reftonum:n{#1}}}
   }
 
@@ -331,7 +379,7 @@
       \xsb_addto_props:n{/rm@oc\int_use:N\g_pbs_oc_int\space#2}
     }{
       \iow_shipout_x:Nx\@mainaux{\token_to_str:N\pbs@seq@push@cx{
-          pbs@props@\noexpand\the\g@pbs@page@int
+          pbs@props@\exp_not:N\int_use:N\g_pbs_page_int
       }{/rm@oc\int_use:N\g_pbs_oc_int\space#2}}
     }
     \int_gincr:N\g_pbs_oc_int
@@ -339,27 +387,27 @@
 
   \cs_new_nopar:Nn\pbs_pdfemc:{\pdfliteral~page~{EMC}}
 
-  %modify output routine to write /Properties<<...>> for current page
-  \tl_gset:Nx\g_pbs_output_tl{\the\output}
-  \global\output{
+  %inserts /Properties <<...>> entry into page resources
+  \cs_gset:Nn\pbs_insert_properties_entry:{
     \pbs_zap_properties: %purge those from previous page
-    \tl_set:Nx\l_tmpa_tl{\seq_if_exist:cT{pbs@props@\the\g@pbs@page@int}{
-      \seq_use:cn{pbs@props@\the\g@pbs@page@int}{~}}}
+    \tl_set:Nx\l_tmpa_tl{\seq_if_exist:cT{pbs@props@\int_use:N\g_pbs_page_int}{
+      \seq_use:cn{pbs@props@\int_use:N\g_pbs_page_int}{~}}}
     \tl_trim_spaces:N\l_tmpa_tl
     \str_if_eq_x:nnF{\l_tmpa_tl}{}{
       \group_begin:
       \tl_set:Nx\l_pbs_temp_tl{\group_end:
         \global\pdfpageresources{
           \the\pdfpageresources
-          /Properties<<\seq_if_exist:cT{pbs@props@\the\g@pbs@page@int}{
-            \seq_use:cn{pbs@props@\the\g@pbs@page@int}{~}
+          /Properties<<\seq_if_exist:cT{pbs@props@\int_use:N\g_pbs_page_int}{
+            \seq_use:cn{pbs@props@\int_use:N\g_pbs_page_int}{~}
           }>>
         }
       }\l_pbs_temp_tl
     }
-    \g_pbs_output_tl
-    \int_gincr:N\g@pbs@page@int
-    %purge from current page's properties, because they aren't needed any longer
+  }
+
+  %deletes /Properties <<...>> from page resources
+  \cs_gset:Nn\pbs_delete_properties_entry:{
     \pbs_zap_properties:
   }
 }{
@@ -788,7 +836,7 @@
         %option `-Ppdf'.
         \tl_if_exist:NF\g_pbs_dpiwarned_tl{
           \tl_new:N\g_pbs_dpiwarned_tl
-          \AtEndDvi{\special{ps::[nobreak]\pbs_dpiwarning:}}
+          \pbs_at_end_dvi:n{\special{ps::[nobreak]\pbs_dpiwarning:}}
         }
       }
     }
@@ -799,7 +847,7 @@
       %require 9.15.
       \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
         \tl_new:N\g_pbs_gsoldwarned_tl
-        \AtEndDvi{\special{ps::[nobreak]\pbs_gsoldwarning:}}
+        \pbs_at_end_dvi:n{\special{ps::[nobreak]\pbs_gsoldwarning:}}
       }
       \special{ps:~
         gsave~currentpoint~translate~1~\tl_use:c{scale_#1}~div~dup~scale~
@@ -842,7 +890,7 @@
       \special{ps:~mark~#1~#2~/BDC~pdfmark}
       \tl_if_exist:NF\g_pbs_gsoldwarned_tl{
         \tl_new:N\g_pbs_gsoldwarned_tl
-        \AtEndDvi{\special{ps::[nobreak]\pbs_gsoldwarning:}}
+        \pbs_at_end_dvi:n{\special{ps::[nobreak]\pbs_gsoldwarning:}}
       }
     }
     \cs_new_nopar:Nn\pbs_pdfemc:{\special{ps:~mark~/EMC~pdfmark}}
@@ -857,7 +905,7 @@
 %adding AcroForm dict to PDF Catalog
 \tl_new:N\g_pbs_fields_tl %takes object IDs of Fields (aka annots with
 \tl_if_exist:NF\g_pbs_acroFormAdded_tl{             %   /Subtype/Widget)
-  \AtEndDvi{
+  \pbs_at_end_dvi:n{
     \tl_if_empty:NF\g_pbs_fields_tl{
       \pbs_pdfobj:nnn{}{array}{\g_pbs_fields_tl}
       \pbs_pdfcatalog:n{
@@ -868,6 +916,32 @@
 }
 \cs_new_nopar:Nn\pbs_appendtofields:n{
   \tl_gput_right:Nx\g_pbs_fields_tl{#1\space}
+}
+
+%modify output routine for output box insertions
+\cs_set_eq:NN\pbs_outputpage_orig:\@outputpage
+\cs_set_nopar:Npn\@outputpage{
+  \int_gincr:N\g_pbs_page_int
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\pbs@newkey{pbs@last@page}{\int_use:N\g_pbs_page_int}
+  }
+  \hbox_set:Nn\@outputbox{
+    \seq_map_inline:Nn\g_pbs_bop_seq{\hbox_to_zero:n{##1\hss}}
+    \tl_set:Nx\l_pbs_box_wd_tl{\dim_use:N\box_wd:N\@outputbox}
+    \box_use_clear:N\@outputbox
+    \skip_horizontal:n{-\l_pbs_box_wd_tl}
+    \seq_map_inline:Nn\g_pbs_eop_seq{\hbox_to_zero:n{##1\hss}}
+    %at end of dvi
+    \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
+      \seq_map_inline:Nn\g_pbs_eod_seq{\hbox_to_zero:n{##1\hss}}
+    }
+  }
+  %insert /Properties into current page's resources
+  \pbs_insert_properties_entry:
+  \pbs_outputpage_orig:
+  %purge /Properties from current page's resources,
+  %because they aren't needed any longer
+  \pbs_delete_properties_entry:
 }
 
 \group_begin:

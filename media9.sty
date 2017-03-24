@@ -39,10 +39,9 @@
 \RequirePackage{l3keys2e}
 \RequirePackage{xparse}
 \RequirePackage{atbegshi}
-\RequirePackage{atenddvi}
 
-\def\g@mix@date@tl{2017/03/16}
-\def\g@mix@version@tl{0.77}
+\def\g@mix@date@tl{2017/03/23}
+\def\g@mix@version@tl{0.78}
 
 \def\g@mix@liiikerneldate{2015/09/27}
 \def\g@mix@liiipkgdate{2015/09/27}
@@ -385,7 +384,7 @@
   }{
     \cs_if_exist:NTF\mdfivesum{
       \cs_new_nopar:Nn\mix_filemdfivesum:n{\mdfivesum file {#1}}
-    }{  
+    }{
       \cs_new_nopar:Nn\mix_filemdfivesum:n{#1}
     }
   }
@@ -393,6 +392,10 @@
 
 %creating global definitions
 \cs_new:Npn\mix@newkey#1#2{\tl_gset:cx{#1}{#2}}
+\AtBeginDocument{
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\mix@newkey[2]{}}
+}
 
 %macros for writing global defs to \jobname.aux
 \msg_set:nnn{media9}{rerun}{Rerun~to~get~internal~references~right!}
@@ -428,24 +431,6 @@
     \cs_if_exist:NF\g_mix_rerunwarned_tl{
       \tl_new:N\g_mix_rerunwarned_tl
       \AtEndDocument{\msg_warning:nn{media9}{rerun}}
-    }
-  }
-}
-
-\cs_gset_eq:NN\mix_atenddvi_checkimpl_orig:\AtEndDvi@CheckImpl%
-\def\AtEndDvi@CheckImpl{
-  \mix_atenddvi_checkimpl_orig:
-  \cs_if_exist:NTF\AtEndDvi@LastPage{
-    \int_compare:nF{\AtEndDvi@LastPage=\value{abspage}}{
-      \cs_if_exist:NF\g_mix_rerunwarned_tl{
-        \tl_new:N\g_mix_rerunwarned_tl
-        \msg_warning:nn{media9}{rerun}
-      }
-    }
-  }{
-    \cs_if_exist:NF\g_mix_rerunwarned_tl{
-      \tl_new:N\g_mix_rerunwarned_tl
-      \msg_warning:nn{media9}{rerun}
     }
   }
 }
@@ -886,7 +871,7 @@
 }
 \ExplSyntaxOn
 
-%environment for setting LTR typesetting direction with e-TeX based engines 
+%environment for setting LTR typesetting direction with e-TeX based engines
 \cs_new:Nn\mix_beginLTR:{
   \cs_if_exist:NT\TeXXeTstate{
     \int_compare:nT{\TeXXeTstate>\c_zero}{\beginL}
