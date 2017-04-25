@@ -1,3 +1,9 @@
+2017-04-25
+	* v0.79 : media9.sty
+	* v0.14 : pdfbase.sty
+	* fix: improved A-Reader-related workaround for annotations/links
+	located on OCGs
+
 2017-03-23
 	* v0.78 : media9.sty
 	* v0.13 : pdfbase.sty

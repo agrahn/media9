@@ -131,7 +131,7 @@
 \RequirePackage{l3keys2e}
 
 \def\g@pbs@date@tl{2017/03/23}
-\def\g@pbs@version@tl{0.15}
+\def\g@pbs@version@tl{0.14}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -295,16 +295,26 @@
     \tl_gset:Nx\g_pbs_pdflastobj_tl{\the\pdflastobj\space 0~R}
   }
   \cs_new_nopar:Nn\pbs_pdfannot:nnnn{
-    %(hidden) dummy Widget, workaround for (pre?) AR-DC bug;
+    %dumb dummy Widget, workaround for AR bug;
     %see https://forums.adobe.com/message/5787612#5787612
     \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
-      \immediate\pdfannot~width~#1~height~#2~depth~#3 {/Subtype/Widget/F~2}}
+      \immediate\pdfannot~width~3pt~height~3pt~depth~\c_zero_dim {
+        /Ff~65537/FT/Btn/Subtype/Widget
+      }
+    }
     \immediate\pdfannot~width~#1~height~#2~depth~#3 {
       \cs_if_exist_use:N\ocgbase_insert_oc:~#4}
     \tl_gset:Nx\g_pbs_pdflastann_tl{\the\pdflastannot\space 0~R}
   }
 
   \cs_new:Nn\pbs_pdflink:nn{
+    %dumb dummy Widget, workaround for AR bug;
+    %see https://forums.adobe.com/message/5787612#5787612
+    \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
+      \immediate\pdfannot~width~3pt~height~3pt~depth~\c_zero_dim {
+        /Ff~65537/FT/Btn/Subtype/Widget
+      }
+    }
     \immediate\pdfstartlink~user~{
       \cs_if_exist_use:N\ocgbase_insert_oc:~#1}#2\pdfendlink
   }
@@ -447,13 +457,11 @@
       \bool_if:NTF\g_pbs_lscape_bool{
         %fix missing annotation rotation of (x)dvipdfmx on landscape pages
         \box_move_up:nn{\dim_eval:n{#2}}{\vbox:n{
-          %(hidden) dummy Widget, workaround for (pre?) AR-DC bug;
+          %dumb dummy Widget, workaround for AR bug;
           %see https://forums.adobe.com/message/5787612#5787612
           \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
             \special{pdf:ann~
-              width~\dim_eval:n{#2+#3}\space
-              height~\dim_eval:n{#1}\space
-              depth~\dim_eval:n{\c_zero_dim}~<</Subtype/Widget/F~2>>
+              width~3pt~height~3pt~depth~0pt~<</Ff~65537/FT/Btn/Subtype/Widget>>
             }
           }
           \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
@@ -464,13 +472,11 @@
           }
         }}
       }{
-        %(hidden) dummy Widget, workaround for (pre?) AR-DC bug;
+        %dumb dummy Widget, workaround for AR bug;
         %see https://forums.adobe.com/message/5787612#5787612
         \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
           \special{pdf:ann~
-            width~\dim_eval:n{#1}\space
-            height~\dim_eval:n{#2}\space
-            depth~\dim_eval:n{#3}~<</Subtype/Widget/F~2>>
+            width~3pt~height~3pt~depth~0pt~<</Ff~65537/FT/Btn/Subtype/Widget>>
           }
         }
         \special{pdf:ann~@pbs@obj\int_use:N\g_pbs_obj_int\space
@@ -484,6 +490,13 @@
     }
 
     \cs_new:Nn\pbs_pdflink:nn{
+      %dumb dummy Widget, workaround for AR bug;
+      %see https://forums.adobe.com/message/5787612#5787612
+      \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
+        \special{pdf:ann~
+          width~3pt~height~3pt~depth~0pt~<</Ff~65537/FT/Btn/Subtype/Widget>>
+        }
+      }
       \special{pdf:bann~<<\cs_if_exist_use:N\ocgbase_insert_oc:~#1>>}#2
       \special{pdf:eann}
     }
@@ -701,28 +714,36 @@
         }
         \end{picture}
       \group_end:
+      %dumb dummy Widget, workaround for AR bug;
+      %see https://forums.adobe.com/message/5787612#5787612
       \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
         \special{ps:~
           mark~
             /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
             /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
-            /Subtype/Widget/F~2
+            /Ff~65537/FT/Btn/Subtype/Widget
           /ANN~pdfmark
         }
         \int_gincr:N\g_pbs_obj_int
       }
-      \special{ps:~
-        mark~
-          /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
-          /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
-          \cs_if_exist_use:N\ocgbase_insert_oc:~#4
-        /ANN~pdfmark
+      %the actual annotation
+      \str_if_eq_x:nnF{#4}{}{
+        \special{ps:~
+          mark~
+            /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
+            /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
+            \cs_if_exist_use:N\ocgbase_insert_oc:~#4
+          /ANN~pdfmark
+        }
+        \tl_gset:Nx\g_pbs_pdflastann_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
+        \int_gincr:N\g_pbs_obj_int
       }
-      \tl_gset:Nx\g_pbs_pdflastann_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
-      \int_gincr:N\g_pbs_obj_int
     }
 
     \cs_new:Nn\pbs_pdflink:nn{
+      %dumb dummy Widget, workaround for AR bug;
+      %see https://forums.adobe.com/message/5787612#5787612
+      \pbs_pdfannot:nnnn{3pt}{3pt}{0pt}{}
       \cs_if_exist:NTF\pdfmark{
         \pdfmark[#2]{pdfmark=/ANN,Raw={
           \cs_if_exist_use:N\ocgbase_insert_oc:~#1}}

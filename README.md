@@ -1,6 +1,6 @@
 #The `media9` LaTeX Package
 
-© 2016 Alexander Grahn
+© 2012--`\today` Alexander Grahn
 
 ##Description
 
