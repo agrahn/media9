@@ -1,8 +1,8 @@
-#The `media9` LaTeX Package
+# The `media9` LaTeX Package
 
 © 2012--`\today` Alexander Grahn
 
-##Description
+## Description
 
 This package provides an interface to embed interactive Flash (SWF) and 3D objects (Adobe U3D & PRC) as well as video and sound files or streams in the popular MP4, FLV, MP3 formats into PDF documents with Acrobat-9/X compatibility. Playback of multimedia files relies on Adobe Flash Player which supports the efficient H.264 codec for video compression.
 
@@ -17,7 +17,7 @@ Supported PDF making workflows are:
 
 The package was written in the new LaTeX3 syntax.
 
-##Requirements
+## Requirements
 
 * l3kernel (LaTeX package), version >=2012/07/16
 * l3packages (LaTeX package), version >=2012/07/16
@@ -26,7 +26,7 @@ The package was written in the new LaTeX3 syntax.
 * dvipdfmx, version >=20120420 for DVI to PDF conversion
 * Adobe Reader, version >=9
 
-##Installation
+## Installation
 
 MiKTeX and TeXLive users should run the package manager for installation.
 
@@ -42,6 +42,6 @@ Otherwise, a manual install into the local TeX-Directory-Structure (TDS) root di
 
 For updating the package, repeat the steps given above.
 
-##License
+## License
 
 This material is subject to the [LaTeX Project Public License](LICENSE).
