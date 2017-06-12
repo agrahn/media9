@@ -1,3 +1,7 @@
+2017-06-12
+	* v0.80 : media9.sty
+	* fix : obsolete l3regex warning
+
 2017-04-25
 	* v0.79 : media9.sty
 	* v0.14 : pdfbase.sty

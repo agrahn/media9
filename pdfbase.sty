@@ -178,8 +178,13 @@
 \AtBeginDocument{
   \iow_now:Nx\@mainaux{
     \token_to_str:N\providecommand\token_to_str:N\pbs@newkey[2]{}
+  }
+  \iow_now:Nx\@mainaux{
     \token_to_str:N\providecommand\token_to_str:N\pbs@seq@push@cx[2]{}
-    \token_to_str:N\providecommand\token_to_str:N\pbs@at@end@dvi@check{}}
+  }
+  \iow_now:Nx\@mainaux{
+    \token_to_str:N\providecommand\token_to_str:N\pbs@at@end@dvi@check{}
+  }
   \iow_now:Nx\@mainaux{\token_to_str:N\pbs@at@end@dvi@check}
   \cs_new:Npn\pbs@at@end@dvi@check{
     \bool_if:nT{
