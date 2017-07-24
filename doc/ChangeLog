@@ -1,3 +1,9 @@
+2017-07-24
+	* v0.81 : media9.sty
+	* v0.15 : pdfbase.sty
+	* fix : replace some \bool_if:n(TF) because of their new greedy behaviour
+	implemented in expl3
+
 2017-06-12
 	* v0.80 : media9.sty
 	* fix : obsolete l3regex warning

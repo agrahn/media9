@@ -130,8 +130,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2017/03/23}
-\def\g@pbs@version@tl{0.14}
+\def\g@pbs@date@tl{2017/07/24}
+\def\g@pbs@version@tl{0.15}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -248,8 +248,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \sys_if_output_pdf:TF{
   %in LuaTeX-0.95.0, pdfTeX primitives got new names
-  \bool_if:nT{
-    \sys_if_engine_luatex_p: && !\int_compare_p:n{\luatexversion<95}
+  \bool_lazy_and:nnT{
+    \sys_if_engine_luatex_p:
+  }{
+    !\int_compare_p:n{\luatexversion<95}
   }{
     \cs_set_protected:Npn\pdfnames{\pdfextension~names~}
     \cs_set_protected:Npn\pdfobj{\pdfextension~obj~}
@@ -434,6 +436,9 @@
   }
   \int_new:N\g_pbs_obj_int %object ID
   \bool_if:NTF\g_pbs_dvipdfmx_bool{ %dvipdfmx/XeTeX
+    %suppress any annotation growth through (x)dvipdfmx option/config var `g'
+    \AtBeginDocument{\special{dvipdfmx:config~g~0}}
+
     \cs_new_nopar:Nn\pbs_pdfobj:nnn{
       \tl_if_blank:oTF{#1}{
         \tl_set:Nx\l_pbs_usenum_tl{@pbs@obj\int_use:N\g_pbs_obj_int}

@@ -39,8 +39,8 @@
 \RequirePackage{xparse}
 \RequirePackage{atbegshi}
 
-\def\g@mix@date@tl{2017/06/12}
-\def\g@mix@version@tl{0.80}
+\def\g@mix@date@tl{2017/07/24}
+\def\g@mix@version@tl{0.81}
 
 \def\g@mix@liiikerneldate{2017/05/29}
 \def\g@mix@liiipkgdate{2017/05/29}
@@ -411,7 +411,6 @@
 \cs_new_nopar:Nn\mix_keytoaux_now:nn{
   \iow_now:Nx\@mainaux{\token_to_str:N\mix@newkey{#1}{#2}}
   \bool_if:nT{
-%    !\cs_if_exist_p:c{#1} || !\str_if_eq_x_p:nn{\tl_use:c{#1}}{#2}
     !\cs_if_exist:cTF{#1}{
       \str_if_eq_x_p:nn{\tl_use:c{#1}}{#2}
     }{
@@ -2322,8 +2321,9 @@
     \mix_pdfobj:nnn{}{dict}{
       /S/JavaScript/JS~(
         try{\l_tmpb_tl}catch(e){console.show();console.println(e)})}}
-    \bool_if:nT{
-      \tl_if_exist_p:c{ann@\l_tmpa_tl}&&
+    \bool_lazy_and:nnT{
+      \tl_if_exist_p:c{ann@\l_tmpa_tl}
+    }{
       !\str_if_eq_x_p:nn{\tl_use:c{ann@\l_tmpa_tl}}{draft}
     }{
       \mix_pdfobj:nnn{}{dict}{
@@ -2338,8 +2338,9 @@
         \tl_if_blank:VF\l_tmpb_tl{/Next~\mix_pdflastobj:}
       }
     }
-    \bool_if:nT{
-      \tl_if_exist_p:c{ann@\l_tmpa_tl}&&
+    \bool_lazy_and:nnT{
+      \tl_if_exist_p:c{ann@\l_tmpa_tl}
+    }{
       !\str_if_eq_x_p:nn{\tl_use:c{ann@\l_tmpa_tl}}{draft}||
       !\tl_if_blank_p:V\l_tmpb_tl
     }{
