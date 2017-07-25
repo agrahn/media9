@@ -39,8 +39,8 @@
 \RequirePackage{xparse}
 \RequirePackage{atbegshi}
 
-\def\g@mix@date@tl{2017/07/24}
-\def\g@mix@version@tl{0.81}
+\def\g@mix@date@tl{2017/07/25}
+\def\g@mix@version@tl{0.82}
 
 \def\g@mix@liiikerneldate{2017/05/29}
 \def\g@mix@liiipkgdate{2017/05/29}
@@ -581,7 +581,7 @@
     \tl_gset:Nx\g_mix_lastasset_tl{\tl_use:c{url_#1}}
   }{
     \file_if_exist:nTF{#1}{
-      \file_add_path:nN{#1}\l_mix_file_tl
+      \file_get_full_name:nN{#1}\l_mix_file_tl
     }{
       \msg_error:nnx{media9}{file~not~found}{#1}
     }
@@ -1643,7 +1643,7 @@
 
   3Dviews .code:n = {
     \file_if_exist:nTF{#1}{
-      \file_add_path:nN{#1}\l_mix_temp_tl
+      \file_get_full_name:nN{#1}\l_mix_temp_tl
       \tl_gset_eq:NN\g_mix_vfile_tl\l_mix_temp_tl
     }{
       \msg_error:nnx{media9}{file~not~found}{#1}

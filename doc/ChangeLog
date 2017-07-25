@@ -1,4 +1,9 @@
 2017-07-24
+	* v0.82 : media9.sty
+	* fix : deprecated expl3 function \file_add_path:nN (two occurrences) replaced
+	with \file_get_full_name:nN
+
+2017-07-24
 	* v0.81 : media9.sty
 	* v0.15 : pdfbase.sty
 	* fix : replace some \bool_if:n(TF) because of their new greedy behaviour
