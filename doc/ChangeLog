@@ -1,3 +1,7 @@
+2017-07-27
+	* v0.83 : media9.sty
+	* fix : non-functional \mediabutton (broken in v. 0.81) 
+
 2017-07-25
 	* v0.82 : media9.sty
 	* fix : deprecated expl3 function \file_add_path:nN (two occurrences) replaced

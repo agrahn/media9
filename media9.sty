@@ -39,8 +39,8 @@
 \RequirePackage{xparse}
 \RequirePackage{atbegshi}
 
-\def\g@mix@date@tl{2017/07/25}
-\def\g@mix@version@tl{0.82}
+\def\g@mix@date@tl{2017/07/27}
+\def\g@mix@version@tl{0.83}
 
 \def\g@mix@liiikerneldate{2017/05/29}
 \def\g@mix@liiipkgdate{2017/05/29}
@@ -2338,11 +2338,13 @@
         \tl_if_blank:VF\l_tmpb_tl{/Next~\mix_pdflastobj:}
       }
     }
-    \bool_lazy_and:nnT{
-      \tl_if_exist_p:c{ann@\l_tmpa_tl}
-    }{
-      !\str_if_eq_x_p:nn{\tl_use:c{ann@\l_tmpa_tl}}{draft}||
-      !\tl_if_blank_p:V\l_tmpb_tl
+    \bool_if:nT{
+      \bool_lazy_and_p:nn{
+        \tl_if_exist_p:c{ann@\l_tmpa_tl}
+      }{
+        !\str_if_eq_x_p:nn{\tl_use:c{ann@\l_tmpa_tl}}{draft}
+      }
+      || !\tl_if_blank_p:V\l_tmpb_tl
     }{
       \tl_gput_right:Nx\g_mix_btnactions_tl{~\mix_pdflastobj:}
     }
