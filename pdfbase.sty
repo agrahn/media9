@@ -242,7 +242,6 @@
 \cs_new_nopar:Nn\pbs_second_of_two:nn{#2}
 
 \cs_new_nopar:Nn\pbs_insert_properties_entry:{}
-\cs_new_nopar:Nn\pbs_delete_properties_entry:{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %commands for creating PDF objects, annots etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -421,11 +420,6 @@
         }
       }\l_pbs_temp_tl
     }
-  }
-
-  %deletes /Properties <<...>> from page resources
-  \cs_gset:Nn\pbs_delete_properties_entry:{
-    \pbs_zap_properties:
   }
 }{
   %pgf + transparency related settings
@@ -946,7 +940,7 @@
   \tl_new:N\g_pbs_acroFormAdded_tl
 }
 \cs_new_nopar:Nn\pbs_appendtofields:n{
-  \tl_gput_right:Nx\g_pbs_fields_tl{#1\space}
+  \tl_gput_left:Nx\g_pbs_fields_tl{#1\space}
 }
 
 %modify output routine for output box insertions
@@ -956,43 +950,24 @@
   \iow_now:Nx\@mainaux{
     \token_to_str:N\pbs@newkey{pbs@last@page}{\int_use:N\g_pbs_page_int}
   }
-  \hbox_set:Nn\@outputbox{
-    \seq_map_inline:Nn\g_pbs_bop_seq{\hbox_to_zero:n{##1\hss}}
-    \tl_set:Nx\l_pbs_box_wd_tl{\dim_use:N\box_wd:N\@outputbox}
-    \hbox_overlap_right:n{\box_use_clear:N\@outputbox}
-    \seq_map_inline:Nn\g_pbs_eop_seq{\hbox_to_zero:n{##1\hss}}
+  \vbox_set:Nn\@outputbox{
+    %begin of page
+    \seq_map_inline:Nn\g_pbs_bop_seq{
+      \hbox_overlap_right:n{\vbox_to_zero:n{##1 \vss}}}
+    \box_use_clear:N\@outputbox
+    %end of page
+    \seq_map_inline:Nn\g_pbs_eop_seq{
+      \hbox_overlap_right:n{\vbox_to_zero:n{\vss ##1}}}
     %at end of dvi
     \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
-      \seq_map_inline:Nn\g_pbs_eod_seq{\hbox_to_zero:n{##1\hss}}
+      \seq_map_inline:Nn\g_pbs_eod_seq{
+        \hbox_overlap_right:n{\vbox_to_zero:n{\vss ##1}}}
     }
   }
   %insert /Properties into current page's resources
   \pbs_insert_properties_entry:
   \pbs_outputpage_orig:
-  %purge /Properties from current page's resources,
-  %because they aren't needed any longer
-  \pbs_delete_properties_entry:
 }
-
-% at-end-dvi actions
-%\RequirePackage{atbegshi}
-%\AtBeginShipout{
-%  \int_gincr:N\g_pbs_page_int
-%  \iow_now:Nx\@mainaux{
-%    \token_to_str:N\pbs@newkey{pbs@last@page}{\int_use:N\g_pbs_page_int}
-%  }
-%  \hbox_set:Nn\AtBeginShipoutBox{
-%    \seq_map_variable:NNn\g_pbs_bop_seq\l_pbs_item_tl{\hbox_to_zero:n{\l_pbs_item_tl\hss}}
-%    \hbox_overlap_right:n{\box_use_clear:N\AtBeginShipoutBox}
-%    \seq_map_variable:NNn\g_pbs_eop_seq\l_pbs_item_tl{\hbox_to_zero:n{\l_pbs_item_tl\hss}}
-%    %at end of dvi
-%    \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
-%      \seq_map_variable:NNn\g_pbs_eod_seq\l_pbs_item_tl{\hbox_to_zero:n{\l_pbs_item_tl\hss}}
-%    }
-%  }
-%  %insert /Properties into current page's resources
-%  \pbs_insert_properties_entry:
-%}
 
 \group_begin:
 \char_set_catcode_active:N\+\let+\space
