@@ -1,11 +1,11 @@
 2017-08-23
 	* v0.84 : media9.sty
-	* fix : non-functional \mediabutton (broken in v. 0.81) 
+	* v0.16 : pdfbase.sty
+	* fix : output routine adjustments (pdfbase.sty)
 
 2017-07-27
 	* v0.83 : media9.sty
-	* v0.16 : pdfbase.sty
-	* fix : output routine adjustments (pdfbase.sty)
+	* fix : non-functional \mediabutton (broken in v. 0.81) 
 
 2017-07-25
 	* v0.82 : media9.sty
