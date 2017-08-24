@@ -128,8 +128,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2017/08/23}
-\def\g@pbs@version@tl{0.16}
+\def\g@pbs@date@tl{2017/08/25}
+\def\g@pbs@version@tl{0.17}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -942,25 +942,31 @@
 }
 
 %modify output routine for output box insertions
+\bool_new:N\l_pbs_is_vertical_bool
 \cs_set_eq:NN\pbs_outputpage_orig:\@outputpage
 \cs_set_nopar:Npn\@outputpage{
   \int_gincr:N\g_pbs_page_int
   \iow_now:Nx\@mainaux{
     \token_to_str:N\pbs@newkey{pbs@last@page}{\int_use:N\g_pbs_page_int}
   }
-  \vbox_set:Nn\@outputbox{
+  \box_if_vertical:cTF{@outputbox}{
+    \bool_set_true:N\l_pbs_is_vertical_bool
+  }{
+    \bool_set_false:N\l_pbs_is_vertical_bool
+  }
+  \hbox_set:Nn\@outputbox{
     %begin of page
-    \seq_map_inline:Nn\g_pbs_bop_seq{
-      \hbox_overlap_right:n{\vbox_to_zero:n{##1 \vss}}}
+    \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_bop_seq{##1}}
     \box_use_clear:N\@outputbox
     %end of page
-    \seq_map_inline:Nn\g_pbs_eop_seq{
-      \hbox_overlap_right:n{\vbox_to_zero:n{\vss ##1}}}
+    \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_eop_seq{##1}}
     %end of dvi
     \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
-      \seq_map_inline:Nn\g_pbs_eod_seq{
-        \hbox_overlap_right:n{\vbox_to_zero:n{\vss ##1}}}
+      \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_eod_seq{##1}}
     }
+  }
+  \bool_if:NT\l_pbs_is_vertical_bool{
+    \vbox_set:Nn\@outputbox{\box_use_clear:N\@outputbox}
   }
   %insert /Properties into current page's resources
   \pbs_insert_properties_entry:

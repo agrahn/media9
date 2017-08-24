@@ -106,13 +106,15 @@ Flash Player supports the efficient H.264 codec for video compression. MP4/H.264
 \begin{center}
 \begin{Verbatim}
   ffmpeg -i video.avi -vf scale="trunc(iw/2)*2:trunc(ih/2)*2"
-    -c:v libx264 -profile:v high -pix_fmt yuv420p -g 30 -r 30 video.mp4
+    -c:v libx264 -profile:v high -pix_fmt yuv420p
+    -g 30 -r 30 video.mp4
 \end{Verbatim}
 \end{center}
 From a sequence \verb+frame-0.png+, \verb+frame-1.png+, ... of bitmap files, an MP4 video is produced by
 \begin{Verbatim}
   ffmpeg -i frame-%d.png -vf scale="trunc(iw/2)*2:trunc(ih/2)*2"
-    -c:v libx264 -profile:v high -pix_fmt yuv420p -g 30 -r 30 video.mp4
+    -c:v libx264 -profile:v high -pix_fmt yuv420p
+    -g 30 -r 30 video.mp4
 \end{Verbatim}
 Both examples insert a key frame (option `\verb+-g+') at every second since the frame rate is set to 30 fps. The video encoder requires even pixel numbers in both dimensions which is ensured by adding `\verb+-vf scale="..."+' to the option list.
 

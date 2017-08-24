@@ -1,3 +1,9 @@
+2017-08-25
+	* v0.85 : media9.sty
+	* v0.17 : pdfbase.sty
+	* fix : fixing output routine in pdfbase.sty: small vertical offset of page
+	content when loading package ocgx2
+
 2017-08-23
 	* v0.84 : media9.sty
 	* v0.16 : pdfbase.sty
