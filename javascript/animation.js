@@ -23,7 +23,7 @@ var  palindrome = true; // true --> play forth and back
 // conditions of the LaTeX Project Public License.
 // 
 // The latest version of this license is in
-//   http://mirrors.ctan.org/tex-archive/macros/latex/base/lppl.txt
+//   http://mirrors.ctan.org/macros/latex/base/lppl.txt
 // 
 // This work has the LPPL maintenance status `maintained'.
 // 

@@ -44,4 +44,4 @@ For updating the package, repeat the steps given above.
 
 ## License
 
-This material is subject to the [LaTeX Project Public License](http://mirrors.ctan.org/tex-archive/macros/latex/base/lppl.txt).
+This material is subject to the [LaTeX Project Public License](http://mirrors.ctan.org/macros/latex/base/lppl.txt).
