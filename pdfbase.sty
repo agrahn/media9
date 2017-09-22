@@ -798,6 +798,8 @@
         }
         \end{picture}
       \group_end:
+      %additional dict entries
+      \tl_set:Nx\l_tmpa_tl{#4} \tl_trim_spaces:N\l_tmpa_tl
       \special{ps:~
         gsave~
         currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
@@ -816,6 +818,10 @@
             pbs@llx~pbs@curx~sub~pbs@lly~pbs@cury~sub~
             pbs@urx~pbs@curx~sub~pbs@ury~pbs@cury~sub
           ]
+          %insert additional dict entries (the Distiller way)
+          \str_if_eq_x:nnF{\l_tmpa_tl}{}{
+            product~(Distiller)~search~{pop~pop~pop~\l_tmpa_tl}{pop}ifelse
+          }
         /BP~pdfmark~grestore~
         \int_compare:nT{#2>\c_zero}{
           %operations needed if used as annotation appearance
@@ -843,12 +849,14 @@
       }
       \begin{picture}(0,0)\put(0,0){\box_use:N#5}\end{picture}
       \special{ps:~mark~/EP~pdfmark~grestore}
-      %additional dict entries
-      \tl_set:Nx\l_tmpa_tl{#4}
-      \tl_trim_spaces:N\l_tmpa_tl
+      %insert additional dict entries (the Ghostscript way)
       \str_if_eq_x:nnF{\l_tmpa_tl}{}{
-        \special{ps:~mark~{pbs@obj\int_use:N\g_pbs_obj_int}~<<\l_tmpa_tl>>~
-          /PUT~pdfmark}
+        \special{ps:~
+          product~(Ghostscript)~search~{
+            pop~pop~pop~
+            mark~{pbs@obj\int_use:N\g_pbs_obj_int}~<<\l_tmpa_tl>>~/PUT~pdfmark
+          }{pop}ifelse
+        } 
       }
       \tl_gset:Nx\g_pbs_pdflastxform_tl{{pbs@obj\int_use:N\g_pbs_obj_int}}
       \int_gincr:N\g_pbs_obj_int
