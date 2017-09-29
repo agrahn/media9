@@ -37,8 +37,8 @@
 \RequirePackage{xparse}
 \RequirePackage{atbegshi}
 
-\def\g@mix@date@tl{2017/08/25}
-\def\g@mix@version@tl{0.85}
+\def\g@mix@date@tl{2017/09/29}
+\def\g@mix@version@tl{0.86}
 
 \def\g@mix@liiikerneldate{2017/05/29}
 \def\g@mix@liiipkgdate{2017/05/29}
@@ -812,7 +812,7 @@
     \mix@btn@dim=\dimexpr\baselineskip*3\relax%
     \ifdim#1<\mix@btn@dim\mix@btn@dim=#1\fi%
     \ifdim#2<\mix@btn@dim\mix@btn@dim=#2\fi%
-    \tikz[x=\mix@btn@dim,y=\mix@btn@dim,transparency group]{%
+    \tikz[x=\mix@btn@dim,y=\mix@btn@dim]{%
       \shade [opacity=\ifdim#2>\dimexpr\baselineskip*6\relax0.6\else0\fi,
         shading angle=-180,even odd rule]
         (-\dimexpr#1/2\relax,-0.5) rectangle (\dimexpr#1/2\relax,0.5)
@@ -841,7 +841,7 @@
     \mix@btn@dim=\dimexpr\baselineskip*3\relax%
     \ifdim#1<\mix@btn@dim\mix@btn@dim=#1\fi%
     \ifdim#2<\mix@btn@dim\mix@btn@dim=#2\fi%
-    \tikz[x=\mix@btn@dim,y=\mix@btn@dim,transparency group]{%
+    \tikz[x=\mix@btn@dim,y=\mix@btn@dim]{%
       \fill [opacity=\ifdim#2>\dimexpr\baselineskip*6\relax0.5\else0\fi,
         color=gray,even odd rule]
         (-\dimexpr#1/2\relax,-0.5) rectangle (\dimexpr#1/2\relax,0.5);

@@ -1,3 +1,9 @@
+2017-09-29
+	* v0.86 : media9.sty
+	* v0.18 : pdfbase.sty
+	* fix : pdfbase.sty: improving \pbs_pdfxform:nnnnn for dvips
+	* new:  pdfbase.sty: \pbs_literal:nn (raw PDF/Postscript insertion)
+
 2017-08-25
 	* v0.85 : media9.sty
 	* v0.17 : pdfbase.sty

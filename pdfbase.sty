@@ -137,8 +137,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2017/08/25}
-\def\g@pbs@version@tl{0.17}
+\def\g@pbs@date@tl{2017/09/29}
+\def\g@pbs@version@tl{0.18}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -611,7 +611,7 @@
         /Properties~<</rm@oc\int_use:N\g_pbs_oc_int\space#2>>>>}
       \int_gincr:N\g_pbs_oc_int
     }
-    \cs_new_nopar:Nn\pbs_pdfemc:{\special{pdf:~code~EMC}}
+    \cs_new_nopar:Nn\pbs_pdfemc:{\special{pdf:code~EMC}}
   }{
     %dvips
     \bool_new:N\g_pbs_powerdot_bool %to cope with some powerdot oddity
@@ -666,7 +666,7 @@
         % re-instated after insertion
         \special{"~#2}
       }{
-        % `direct' works in the same as `page': no origin translation,
+        % `direct' does the same as `page': no origin translation,
         % no gs saving
         \special{ps::~#2}
       }
