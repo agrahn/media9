@@ -97,6 +97,15 @@
 %
 %   --------
 %
+%   \pbs_literal:nn
+%     #1: keyword (empty) | direct | page 
+%     #2: raw PDF/Postscript code
+%     implements \pdfliteral{...}, \pdfliteral page {...},
+%     \pdfliteral page {...} from pdfTeX, and
+%     \special{" ...} and  \special{ps: ...} from dvips
+%
+%   --------
+%
 %   \pbs_pdfcatalog:n
 %     #1: dictionary (key-value)
 %
@@ -277,6 +286,21 @@
   \cs_generate_variant:Nn\_pbs_reftonum:n{f}
   \cs_new_nopar:Npn\_pbs_reftonum:w #1~0~R{#1}
 
+  %literal PDF code into content stream, no saving of graphics state
+  \cs_new_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or `page'
+    \str_case:nnF{#1}{             % #2: raw PDF
+      % `direct' inserts raw pdf code without translating origin (0,0) to
+      % current position: origin is lower left page corner
+      {direct}{\pdfliteral~direct~{#2}}
+      % same as above, but closing text object if necessary
+      {page}{\pdfliteral~page~{#2}}
+    }{
+      % closing text object if necessary and setting current
+      % location's coordinates to (0,0)
+      \pdfliteral{#2}
+    }
+  }
+
   \cs_new_nopar:Nn\pbs_pdfobj:nnn{
     \tl_clear:N\l_pbs_usenum_tl
     \tl_if_blank:oF{#1}{
@@ -430,6 +454,20 @@
   \bool_if:NTF\g_pbs_dvipdfmx_bool{ %dvipdfmx/XeTeX
     %suppress any annotation growth through (x)dvipdfmx option/config var `g'
     \AtBeginDocument{\special{dvipdfmx:config~g~0}}
+
+    %literal PDF code into content stream; open text objects are always closed
+    \cs_new_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or `page'
+      \str_if_eq:nnTF{#1}{}{         % #2: raw PDF
+        % set current location's coordinates to (0,0), while saving graphics
+        % state before and re-instating after insertion (this is different from
+        % \pdfliteral{...}}
+        \special{pdf:content~#2}
+      }{
+        % `direct' works the same as `page': no origin translation,
+        % no gs saving, but closing open text objects
+        \special{pdf:code~#2}
+      }
+    }
 
     \cs_new_nopar:Nn\pbs_pdfobj:nnn{
       \tl_if_blank:oTF{#1}{
@@ -617,6 +655,20 @@
         /P{/ASCIIHexDecode~filter/PUT~pdfmark}bind~def
         /PP{/PUT~pdfmark}bind~def
         /C{/CLOSE~pdfmark}bind~def~end
+      }
+    }
+
+    %insert literal Postscript code
+    \cs_new_nopar:Nn\pbs_literal:nn{ % #1: empty (`'), `direct' or `page'
+      \str_if_eq:nnTF{#1}{}{         % #2: raw Postscript
+        % set current location's coordinates to (0,0) and set unit vectors to
+        % 1bp right and 1bp upwards; graphics state is saved before and
+        % re-instated after insertion
+        \special{"~#2}
+      }{
+        % `direct' works in the same as `page': no origin translation,
+        % no gs saving
+        \special{ps::~#2}
       }
     }
 
