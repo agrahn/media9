@@ -2,6 +2,8 @@
 
 © 2012--`\today` Alexander Grahn
 
+https://github.com/agrahn/media9
+
 ## Description
 
 This package provides an interface to embed interactive Flash (SWF) and 3D objects (Adobe U3D & PRC) as well as video and sound files or streams in the popular MP4, FLV, MP3 formats into PDF documents with Acrobat-9/X compatibility. Playback of multimedia files relies on Adobe Flash Player which supports the efficient H.264 codec for video compression.

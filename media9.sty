@@ -37,8 +37,8 @@
 \RequirePackage{xparse}
 \RequirePackage{atbegshi}
 
-\def\g@mix@date@tl{2017/09/29}
-\def\g@mix@version@tl{0.86}
+\def\g@mix@date@tl{2018/01/04}
+\def\g@mix@version@tl{0.87}
 
 \def\g@mix@liiikerneldate{2017/05/29}
 \def\g@mix@liiipkgdate{2017/05/29}
@@ -2152,10 +2152,10 @@
 %helpers for option parsing
 \cs_new:Npn\mix_separate_cmd_from_actn:w#1[#2]#3\q_stop{#1}
 \cs_new:Npn\mix_separate_arg_from_actn:w#1[#2]#3\q_stop{#2}
-\cs_generate_variant:Nn\regex_match:nnTF{nV}
-\cs_generate_variant:Nn\regex_match:nnT{nV}
-\cs_generate_variant:Nn\tl_if_blank:nF{c}
-\cs_generate_variant:Nn\tl_if_eq:NNTF{Vn}
+\prg_generate_conditional_variant:Nnn\regex_match:nn{nV}{TF}
+\prg_generate_conditional_variant:Nnn\regex_match:nn{nV}{T}
+\prg_generate_conditional_variant:Nnn\tl_if_blank:n{v}{F}
+\prg_generate_conditional_variant:Nnn\tl_if_eq:nn{Vn}{TF}
 
 \bool_new:N\g_mix_btndraft_bool
 \keys_define:nn{media9/mbtndraft}{

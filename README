@@ -1,14 +1,10 @@
-                             ==========================
-                              The media9 LaTeX Package
-                             ==========================
+==================================
+ The media9 LaTeX Package
 
+ https://github.com/agrahn/media9
 
-Author:
-
-Alexander Grahn
-
-
-Description:
+ (C) 2012--\today Alexander Grahn
+==================================
 
 This package provides an interface to embed interactive Flash (SWF) and
 3D objects (Adobe U3D & PRC) as well as video and sound files or streams
