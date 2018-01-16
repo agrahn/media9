@@ -137,8 +137,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2017/09/29}
-\def\g@pbs@version@tl{0.18}
+\def\g@pbs@date@tl{2018/01/16}
+\def\g@pbs@version@tl{0.19}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -987,15 +987,12 @@
 
 %adding AcroForm dict to PDF Catalog
 \tl_new:N\g_pbs_fields_tl %takes object IDs of Fields (aka annots with
-\tl_if_exist:NF\g_pbs_acroFormAdded_tl{             %   /Subtype/Widget)
-  \pbs_at_end_dvi:n{
-    \tl_if_empty:NF\g_pbs_fields_tl{
-      \pbs_pdfobj:nnn{}{array}{\g_pbs_fields_tl}
-      \pbs_pdfcatalog:n{
-        /AcroForm~<</Fields~\pbs_pdflastobj:/NeedAppearances~false>>}
-    }
+\pbs_at_end_dvi:n{
+  \tl_if_empty:NF\g_pbs_fields_tl{
+    \pbs_pdfobj:nnn{}{array}{\g_pbs_fields_tl}
+    \pbs_pdfcatalog:n{
+      /AcroForm~<</Fields~\pbs_pdflastobj:/NeedAppearances~false>>}
   }
-  \tl_new:N\g_pbs_acroFormAdded_tl
 }
 \cs_new_nopar:Nn\pbs_appendtofields:n{
   \tl_gput_left:Nx\g_pbs_fields_tl{#1\space}
@@ -1020,17 +1017,23 @@
     \box_use_clear:N\@outputbox
     %end of page
     \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_eop_seq{##1}}
-    %end of dvi
-    \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
-      \hbox_overlap_right:n{\seq_map_inline:Nn\g_pbs_eod_seq{##1}}
-    }
   }
   \bool_if:NT\l_pbs_is_vertical_bool{
     \vbox_set:Nn\@outputbox{\box_use_clear:N\@outputbox}
   }
-  %insert /Properties into current page's resources
-  \pbs_insert_properties_entry:
   \pbs_outputpage_orig:
+}
+
+\RequirePackage{atbegshi}
+\AtBeginShipout{
+  \AtBeginShipoutAddToBoxForeground{
+    %insert /Properties into current page's resources
+    \pbs_insert_properties_entry:
+    %end of dvi (last page)
+    \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
+      \seq_map_variable:NNn\g_pbs_eod_seq\l_tmpa_tl{\l_tmpa_tl}
+    }
+  }
 }
 
 \group_begin:

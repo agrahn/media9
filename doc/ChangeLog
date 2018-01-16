@@ -1,3 +1,8 @@
+2018-01-16
+	* v0.88 : media9.sty
+	* v0.19 : pdfbase.sty
+	* fix : pdfbase.sty: improving \pbs_at_end_dvi:n using `atbegshi' package
+
 2018-01-04
 	* v0.87 : media9.sty
 	* fix : media9.sty: fixing `kernel/invalid-variant' warnings
