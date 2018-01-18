@@ -4,7 +4,7 @@
 <!-- a FlashPlayer-10 compatible component for playing             -->
 <!-- FLV and MP4/H.264 video files and streams.                    -->
 <!--                                                               -->
-<!-- version 20150730                                              -->
+<!-- version 20180118                                              -->
 <!--                                                               -->
 <!--                                                               -->
 <!-- The free Apache Flex 4 SDK is required to compile             -->
@@ -78,9 +78,9 @@
           case MediaPlayerState.PLAYBACK_ERROR: // ('playbackError')
             Alert.show('Unable to play \''+event.target.source+'\'','Error');
             break;
-          case MediaPlayerState.READY:
-            if(autoPlay) vidDisp.play();
-            break;
+          //case MediaPlayerState.READY:
+          //  if(autoPlay) vidDisp.play();
+          //  break;
           //MediaPlayerState.BUFFERING
           //MediaPlayerState.LOADING
           //MediaPlayerState.PAUSED
@@ -310,7 +310,7 @@
     id="vidDisp"
     width="100%" height="100%" scaleMode="{scaleMode}"
     source="{source}" volume="{vol}"
-    autoPlay="false"
+    autoPlay="{autoPlay}"
     autoRewind="{autoRewind}" loop="{loop}"
     mediaPlayerStateChange="onStateChange(event);"
     complete="vidComplete=true;"

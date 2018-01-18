@@ -137,8 +137,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2018/01/16}
-\def\g@pbs@version@tl{0.19}
+\def\g@pbs@date@tl{2018/01/18}
+\def\g@pbs@version@tl{0.20}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -1025,13 +1025,15 @@
 }
 
 \RequirePackage{atbegshi}
-\AtBeginShipout{
-  \AtBeginShipoutAddToBoxForeground{
-    %insert /Properties into current page's resources
-    \pbs_insert_properties_entry:
-    %end of dvi (last page)
-    \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
-      \seq_map_variable:NNn\g_pbs_eod_seq\l_tmpa_tl{\l_tmpa_tl}
+\AtBeginDocument{
+  \AtBeginShipout{
+    \AtBeginShipoutAddToBoxForeground{
+      %insert /Properties into current page's resources
+      \pbs_insert_properties_entry:
+      %end of dvi (last page)
+      \int_compare:nT{\pbs@last@page=\g_pbs_page_int}{
+        \seq_map_variable:NNn\g_pbs_eod_seq\l_tmpa_tl{\l_tmpa_tl}
+      }
     }
   }
 }

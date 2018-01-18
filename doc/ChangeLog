@@ -1,3 +1,8 @@
+2018-01-18
+	* v0.89 : media9.sty
+	* v0.20 : pdfbase.sty
+	* fix : pdfbase.sty: end-of-dvi improved; VPlayer.mxml: `autoPlay' issue fixed
+
 2018-01-16
 	* v0.88 : media9.sty
 	* v0.19 : pdfbase.sty
