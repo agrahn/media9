@@ -122,6 +122,17 @@
 %   \pbs_at_end_dvi:n
 %     #1: \specials or \write to be inserted on the very last page
 %
+%   --------
+%
+%   \pbs_add_form_font: (pdfLaTeX, LuaLaTeX)
+%     adds current font as a resource to the global /AcroForm dict, allowing
+%     the font to be used in PDF Forms (theoretically, see
+%     https://acrobat.uservoice.com/forums/590923-acrobat-for-windows-and-mac/
+%       suggestions/33077827-bug-in-text-field-forms-embedded-opentype-font )
+%   \pbs_last_form_font: (pdfLaTeX, LuaLaTeX)
+%     expands to current font's resource name; to be used in the /DA (...)
+%     entry of the Form dictionary
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % This work may be distributed and/or modified under the
@@ -137,8 +148,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2018/01/18}
-\def\g@pbs@version@tl{0.20}
+\def\g@pbs@date@tl{2018/02/28}
+\def\g@pbs@version@tl{0.21}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -279,6 +290,7 @@
     \cs_set_eq:NN\pdfxform\saveboxresource
     \cs_set_eq:NN\pdfrefxform\useboxresource
     \cs_set_eq:NN\pdflastxform\lastsavedboxresourceindex
+    \cs_set:Npn\pdffontobjnum{\pdffeedback~fontobjnum}
   }
   %helper func to remove `0 R' part from pdf obj reference
   \cs_new_nopar:Nn\pbs_reftonum:n{\_pbs_reftonum:f{#1}}
@@ -443,6 +455,17 @@
       }\l_pbs_temp_tl
     }
   }
+
+  \cs_new_nopar:Nn\pbs_add_form_font:{
+    \cs_if_exist:cF{pbs_form_font_\pdffontobjnum\font}{
+      \tl_new:c{pbs_form_font_\pdffontobjnum\font}
+      \tl_gput_right:Nx\g_pbs_form_fonts_tl{
+        ~/FormFont\pdffontobjnum\font\space\pdffontobjnum\font\space 0~R
+      }
+    }
+    \tl_gset:Nx\g_pbs_last_form_font_tl{/FormFont\pdffontobjnum\font}
+  }
+  \cs_new_nopar:Nn\pbs_last_form_font:{\g_pbs_last_form_font_tl}
 }{
   %pgf + transparency related settings
   \bool_new:N\g_pbs_pgfloaded_bool
@@ -628,17 +651,19 @@
       }
     }
 
-    \@ifpackageloaded{hyperref}{}{
-      %define `?pdfmark' operator as in file hdvips.def from package `hyperref'
-      \special{!~
-        systemdict~/pdfmark~known
-        {
-          userdict~/?pdfmark~systemdict~/exec~get~put
-        }{
-          userdict~/?pdfmark~systemdict~/pop~get~put~
-          userdict~/pdfmark~systemdict~/cleartomark~get~put
+    \AtBeginDocument{
+      \@ifpackageloaded{hyperref}{}{
+        %define `?pdfmark' operator as in file pdfmark.def from package `hyperref'
+        \special{!~
+          systemdict~/pdfmark~known
+          {
+            userdict~/?pdfmark~systemdict~/exec~get~put
+          }{
+            userdict~/?pdfmark~systemdict~/pop~get~put~
+            userdict~/pdfmark~systemdict~/cleartomark~get~put
+          }
+          ifelse~
         }
-        ifelse~
       }
     }
 
@@ -987,11 +1012,18 @@
 
 %adding AcroForm dict to PDF Catalog
 \tl_new:N\g_pbs_fields_tl %takes object IDs of Fields (aka annots with
+\tl_new:N\g_pbs_form_fonts_tl %name tree of font resources used in text fields
 \pbs_at_end_dvi:n{
   \tl_if_empty:NF\g_pbs_fields_tl{
     \pbs_pdfobj:nnn{}{array}{\g_pbs_fields_tl}
     \pbs_pdfcatalog:n{
-      /AcroForm~<</Fields~\pbs_pdflastobj:/NeedAppearances~false>>}
+      /AcroForm~<<
+        /Fields~\pbs_pdflastobj:/NeedAppearances~false~
+        \tl_if_empty:NF\g_pbs_form_fonts_tl{
+          /DR~<</Font~<<\g_pbs_form_fonts_tl>> >>
+        }
+      >>
+    }
   }
 }
 \cs_new_nopar:Nn\pbs_appendtofields:n{

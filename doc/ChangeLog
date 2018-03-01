@@ -1,3 +1,10 @@
+2018-02-28
+	* v0.90 : media9.sty
+	* v0.21 : pdfbase.sty
+	* fix : pdfbase.sty: `?pdfmark' code delayed to begin of document
+	* new:  pdfbase.sty: adding \pbs_add_form_font: and \pbs_last_form_font: for
+	  using embedded fonts in PDF Forms
+
 2018-01-18
 	* v0.89 : media9.sty
 	* v0.20 : pdfbase.sty
