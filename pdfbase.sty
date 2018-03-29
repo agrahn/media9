@@ -77,7 +77,7 @@
 %
 %   \pbs_pdflastxform:
 %     inserts object ID of PDF Form XObject created during most recent call of
-%     \pbs_pdfxform:nnn
+%     \pbs_pdfxform:nnnnn
 %
 %   \pbs_pdfrefxform:n
 %     #1: xform object ID
@@ -100,7 +100,7 @@
 %   \pbs_literal:nn
 %     #1: keyword (empty) | direct | page 
 %     #2: raw PDF/Postscript code
-%     implements \pdfliteral{...}, \pdfliteral page {...},
+%     implements \pdfliteral{...}, \pdfliteral direct {...},
 %     \pdfliteral page {...} from pdfTeX, and
 %     \special{" ...} and  \special{ps: ...} from dvips
 %
@@ -129,6 +129,7 @@
 %     the font to be used in PDF Forms (theoretically, see
 %     https://acrobat.uservoice.com/forums/590923-acrobat-for-windows-and-mac/
 %       suggestions/33077827-bug-in-text-field-forms-embedded-opentype-font )
+%
 %   \pbs_last_form_font: (pdfLaTeX, LuaLaTeX)
 %     expands to current font's resource name; to be used in the /DA (...)
 %     entry of the Form dictionary
@@ -148,8 +149,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2018/02/28}
-\def\g@pbs@version@tl{0.21}
+\def\g@pbs@date@tl{2018/03/29}
+\def\g@pbs@version@tl{0.22}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -663,6 +664,8 @@
             userdict~/pdfmark~systemdict~/cleartomark~get~put
           }
           ifelse~
+          %keep track of xform nesting level
+          true~setglobal~globaldict~/pbs@xform@level~0~put~false~setglobal~
         }
       }
     }
@@ -750,7 +753,7 @@
                   })P
                 }
               }{
-                \special{ps:~
+                \special{ps:
                   mark~
                     \l_pbs_usenum_tl~
                     (\pbs_filedump:nnn{\l_pbs_offset_tl}{32767}{
@@ -769,7 +772,7 @@
                 m\l_pbs_usenum_tl~C~end
               }
             }{
-              \special{ps:~
+              \special{ps:
                 mark~\l_pbs_usenum_tl~<<\pbs_first_of_two:nn#3>>~/PUT~pdfmark~
                 mark~\l_pbs_usenum_tl~/CLOSE~pdfmark
               }
@@ -796,7 +799,7 @@
       %dumb dummy Widget, workaround for AR bug;
       %see https://forums.adobe.com/message/5787612#5787612
       \str_if_eq_x:nnF{\cs_if_exist_use:N\ocgbase_insert_oc:}{}{
-        \special{ps:~
+        \special{ps:
           mark~
             /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
             /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
@@ -807,7 +810,7 @@
       }
       %the actual annotation
       \str_if_eq_x:nnF{#4}{}{
-        \special{ps:~
+        \special{ps:
           mark~
             /_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}
             /Rect~[pbs@llx~pbs@lly~pbs@urx~pbs@ury]
@@ -845,7 +848,15 @@
     }
 
     \cs_new_nopar:Nn\pbs_pdfxform:nnnnn{ % #1, #3 not used (resources are
-      %managed by pdfmarks)
+      %this allows nesting \pbs_pdfxform:nnnnn{...}      %  managed by pdfmarks)
+      \special{ps:
+        gsave~
+        pbs@xform@level~0~eq~{/pbs@ctm@0~matrix~currentmatrix~def}~if~
+        pbs@ctm@0~setmatrix~
+        true~setglobal~
+        globaldict~/pbs@xform@level~pbs@xform@level~1~add~put~
+        false~setglobal
+      }
       %rescale box to fit within the papersize while distilling
       \tl_gset:cx{scale_{pbs@obj\int_use:N\g_pbs_obj_int}}{\fp_eval:n{min(1.0,
         \dim_ratio:nn{\paperwidth}{\box_wd:N#5},
@@ -877,7 +888,7 @@
       \group_end:
       %additional dict entries
       \tl_set:Nx\l_tmpa_tl{#4} \tl_trim_spaces:N\l_tmpa_tl
-      \special{ps:~
+      \special{ps:
         gsave~
         currentpoint~/pbs@cury~exch~def~/pbs@curx~exch~def~
         %translate graphics to upper left page corner
@@ -928,7 +939,7 @@
       \special{ps:~mark~/EP~pdfmark~grestore}
       %insert additional dict entries (the Ghostscript way)
       \str_if_eq_x:nnF{\l_tmpa_tl}{}{
-        \special{ps:~
+        \special{ps:
           product~(Ghostscript)~search~{
             pop~pop~pop~
             mark~{pbs@obj\int_use:N\g_pbs_obj_int}~<<\l_tmpa_tl>>~/PUT~pdfmark
@@ -947,6 +958,12 @@
           \pbs_at_end_dvi:n{\special{ps::[nobreak]\pbs_dpiwarning:}}
         }
       }
+      \special{ps:
+        true~setglobal~
+        globaldict~/pbs@xform@level~pbs@xform@level~1~sub~put~
+        false~setglobal~
+        grestore
+      }
     }
 
     \cs_new_nopar:Nn\pbs_pdfrefxform:n{% #1: xform obj ID
@@ -957,7 +974,7 @@
         \tl_new:N\g_pbs_gsoldwarned_tl
         \pbs_at_end_dvi:n{\special{ps::[nobreak]\pbs_gsoldwarning:}}
       }
-      \special{ps:~
+      \special{ps:
         gsave~currentpoint~translate~1~\tl_use:c{scale_#1}~div~dup~scale~
         mark~#1~/SP~pdfmark~grestore
       }
@@ -970,11 +987,11 @@
           \str_if_eq_p:Vn\l_pbs_ext_tl{ps}
         ||\str_if_eq_p:Vn\l_pbs_ext_tl{eps}
       }{
-        \special{ps:~
+        \special{ps:
           mark~/_objdef~{pbs@obj\int_use:N\g_pbs_obj_int}~/NI~pdfmark
         }
         \special{psfile=#1~hsize=0~vsize=0}
-        \special{ps:~
+        \special{ps:
           {
             0~0~1~[1~0~0~1~0~0]~{}~image~%empty dummy, in case #1 is not
           }?pdfmark                      %a valid raster image file

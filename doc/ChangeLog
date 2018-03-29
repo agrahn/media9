@@ -1,3 +1,8 @@
+2018-03-29
+	* v0.91 : media9.sty
+	* v0.22 : pdfbase.sty
+	* fix : pdfbase.sty: allow nested `\pbs_pdfxform:nnnnn' in dvips mode
+
 2018-02-28
 	* v0.90 : media9.sty
 	* v0.21 : pdfbase.sty
