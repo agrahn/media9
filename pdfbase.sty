@@ -149,8 +149,8 @@
 \RequirePackage{expl3}
 \RequirePackage{l3keys2e}
 
-\def\g@pbs@date@tl{2018/03/29}
-\def\g@pbs@version@tl{0.22}
+\def\g@pbs@date@tl{2018/04/06}
+\def\g@pbs@version@tl{0.23}
 
 \ProvidesExplPackage{pdfbase}{\g@pbs@date@tl}{\g@pbs@version@tl}
 {driver independent access to low-level PDF features}
@@ -261,6 +261,7 @@
 \cs_new_nopar:Nn\pbs_second_of_two:nn{#2}
 
 \cs_new_nopar:Nn\pbs_insert_properties_entry:{}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %commands for creating PDF objects, annots etc.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -293,6 +294,7 @@
     \cs_set_eq:NN\pdflastxform\lastsavedboxresourceindex
     \cs_set:Npn\pdffontobjnum{\pdffeedback~fontobjnum}
   }
+
   %helper func to remove `0 R' part from pdf obj reference
   \cs_new_nopar:Nn\pbs_reftonum:n{\_pbs_reftonum:f{#1}}
   \cs_new_nopar:Nn\_pbs_reftonum:n{\exp_after:wN\_pbs_reftonum:w#1}
@@ -335,6 +337,7 @@
     }
     \tl_gset:Nx\g_pbs_pdflastobj_tl{\the\pdflastobj\space 0~R}
   }
+
   \cs_new_nopar:Nn\pbs_pdfannot:nnnn{
     %dumb dummy Widget, workaround for AR bug;
     %see https://forums.adobe.com/message/5787612#5787612
@@ -517,6 +520,7 @@
       }
       \tl_gset_eq:NN\g_pbs_pdflastobj_tl\l_pbs_usenum_tl
     }
+
     \cs_new_nopar:Nn\pbs_pdfannot:nnnn{
       \bool_if:NTF\g_pbs_lscape_bool{
         %fix missing annotation rotation of (x)dvipdfmx on landscape pages
@@ -663,10 +667,12 @@
             userdict~/?pdfmark~systemdict~/pop~get~put~
             userdict~/pdfmark~systemdict~/cleartomark~get~put
           }
-          ifelse~
-          %keep track of xform nesting level
-          true~setglobal~globaldict~/pbs@xform@level~0~put~false~setglobal~
+          ifelse
         }
+      }
+      \special{!~
+        %keeping track of xform nesting level
+        true~setglobal~globaldict~/pbs@xform@level~0~put~false~setglobal
       }
     }
 

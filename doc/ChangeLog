@@ -1,3 +1,8 @@
+2018-04-06
+	* v0.92 : media9.sty
+	* v0.23 : pdfbase.sty
+	* fix : pdfbase.sty: nesting level counter for `\pbs_pdfxform:nnnnn' in dvips mode
+
 2018-03-29
 	* v0.91 : media9.sty
 	* v0.22 : pdfbase.sty
