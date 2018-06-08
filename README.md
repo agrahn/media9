@@ -2,7 +2,7 @@
 
 © 2012--`\today` Alexander Grahn
 
-https://github.com/agrahn/media9
+**Notice:** I moved to [GitLab](https://gitlab.com/agrahn/media9) recently.
 
 ## Description
 
